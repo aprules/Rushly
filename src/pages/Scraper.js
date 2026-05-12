@@ -80,6 +80,8 @@ export default function Scraper({ session }) {
   const sessionIdRef = useRef('');
   const activeSchoolsCountRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
+  const activeSchoolsCountRef = useRef(0);
+  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     const saved = localStorage.getItem('rushly_schools');
@@ -154,17 +156,18 @@ export default function Scraper({ session }) {
             done:    row.done
           };
           if (row.status) setStatus(row.status);
-          if (row.pct)    setProgress(row.pct);
+          if (row.pct) {
+            setProgress(row.pct);
+            lastActivityRef.current = Date.now(); // only reset on real progress
+          }
         }
 
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
         setSchoolLogs(logs);
-        lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
         const allDone = data.every(r => r.done);
-        const expectedCount = activeSchoolsCountRef.current || 1;
-        if (allDone && data.length >= expectedCount) {
+        if (allDone && data.length >= activeSchoolsCountRef.current) {
           finishScrape();
         }
       } catch(e) {}
