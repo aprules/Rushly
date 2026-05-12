@@ -76,7 +76,7 @@ export default function Login() {
   };
 
   const inputStyle = {
-    width: '100%', height: '44px',
+    width: '100%', height: '38px',
     background: '#fff',
     border: '1px solid #ced4da',
     borderRadius: '6px',
@@ -106,10 +106,10 @@ export default function Login() {
         {/* ── NAVY BACKGROUND WITH COVER IMAGE ── */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          height: '75%', zIndex: 0,
+          height: '39%', zIndex: 0,
           backgroundImage: 'url("https://software.apparelprofits.com/templates/themes/tsc/skin/images/cover.jpg")',
           backgroundSize: 'cover',
-          backgroundPosition: 'center top',
+          backgroundPosition: 'center',
         }}>
           {/* Navy overlay */}
           <div style={{
@@ -125,49 +125,49 @@ export default function Login() {
         {/* ── WAVE DIVIDER — exact DecoGro SVG path, positioned low ── */}
         <div style={{
           position: 'absolute',
-          top: 'calc(75% - 80px)',
+          top: 'calc(39% - 39px)',
           left: 0, right: 0,
-          height: '160px',
+          height: '39px',
           zIndex: 2
         }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"
             preserveAspectRatio="none"
             style={{ width: '100%', height: '100%', display: 'block' }}>
-            <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40 L1440 140 L0 140z" fill="#f3f3f9"/>
+            <path d="M 0,0 C 480,160 960,160 1440,0 L1440 140 L0 140z" fill="#f3f3f9"/>
           </svg>
         </div>
 
         {/* ── LIGHT BOTTOM ── */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '25%', background: '#f3f3f9', zIndex: 1
+          height: '10%', background: '#f3f3f9', zIndex: 1
         }} />
 
         {/* ── CARD — sits in the navy area like DecoGro ── */}
         <div style={{
           position: 'relative', zIndex: 10,
           display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-          flex: 1, paddingTop: '40px', paddingBottom: '20px', paddingLeft: '20px', paddingRight: '20px'
+          flex: 1, paddingTop: '200px', paddingBottom: '20px', paddingLeft: '20px', paddingRight: '20px'
         }}>
           <div style={{
-            width: '440px',
+            width: '400px',
             background: '#fff',
-            borderRadius: '12px',
-            padding: '32px 36px 28px',
+            borderRadius: '5px',
+            padding: '45px 30px 70px',
             boxShadow: '0 1px 2px rgba(56,65,74,0.15)'
           }}>
 
             {/* Logo */}
-            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '5px' }}>
               <img
                 src={logo}
                 alt="Rushly"
-                style={{ height: '48px', width: 'auto', marginBottom: '14px' }}
+                style={{ height: '90px', width: 'auto', marginBottom: '10px', }}
               />
               {!forgotMode && (
                 <>
                   <h5 style={{ fontSize: '16px', fontWeight: '700', color: '#405189', margin: '0 0 5px' }}>Welcome Back!</h5>
-                  <p style={{ fontSize: '13px', color: '#878a99', margin: 0 }}>Sign in to continue to Rushly.</p>
+                  <p style={{ fontSize: '13px', color: '#878a99', margin: 5 }}>Sign in to continue to Rushly.</p>
                 </>
               )}
               {forgotMode && (
@@ -197,10 +197,10 @@ export default function Login() {
 
             {/* ── LOGIN FORM ── */}
             {!forgotMode && (
-              <form onSubmit={handleLogin} style={{ marginTop: '16px' }}>
+              <form onSubmit={handleLogin} style={{ marginTop: '30px' }}>
 
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Email</label>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Email</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
                     placeholder="Enter email address" style={inputStyle}
                     onFocus={e => { e.target.style.borderColor = '#405189'; e.target.style.boxShadow = '0 0 0 3px rgba(64,81,137,0.1)'; }}
@@ -208,8 +208,8 @@ export default function Login() {
                   />
                 </div>
 
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Password</label>
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', fontSize: '15px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Password</label>
                   <div style={{ position: 'relative' }}>
                     <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required
                       placeholder="Enter password" style={{ ...inputStyle, paddingRight: '44px' }}
@@ -242,7 +242,7 @@ export default function Login() {
                 </div>
 
                 <button type="submit" disabled={loading} style={{
-                  width: '100%', height: '44px', background: '#0ab39c',
+                  width: '100%', height: '38px', background: '#0ab39c',
                   color: '#fff', border: 'none', borderRadius: '6px',
                   fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
                   opacity: loading ? 0.8 : 1, transition: 'background 0.15s',
@@ -258,7 +258,7 @@ export default function Login() {
 
             {/* ── FORGOT PASSWORD FORM ── */}
             {forgotMode && !forgotSent && (
-              <form onSubmit={handleForgotPassword} style={{ marginTop: '16px' }}>
+              <form onSubmit={handleForgotPassword} style={{ marginTop: '0px' }}>
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Email</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
@@ -268,7 +268,7 @@ export default function Login() {
                   />
                 </div>
                 <button type="submit" disabled={forgotLoading} style={{
-                  width: '100%', height: '44px', background: '#0ab39c', color: '#fff',
+                  width: '100%', height: '38px', background: '#0ab39c', color: '#fff',
                   border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: '700',
                   cursor: forgotLoading ? 'not-allowed' : 'pointer', marginBottom: '12px',
                   fontFamily: "'Nunito', sans-serif"
