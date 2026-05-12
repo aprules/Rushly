@@ -80,8 +80,6 @@ export default function Scraper({ session }) {
   const sessionIdRef = useRef('');
   const activeSchoolsCountRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
-  const activeSchoolsCountRef = useRef(0);
-  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     const saved = localStorage.getItem('rushly_schools');
@@ -165,7 +163,8 @@ export default function Scraper({ session }) {
 
         // Use ref for school count so it's always current
         const allDone = data.every(r => r.done);
-        if (allDone && data.length >= activeSchoolsCountRef.current) {
+        const expectedCount = activeSchoolsCountRef.current || 1;
+        if (allDone && data.length >= expectedCount) {
           finishScrape();
         }
       } catch(e) {}
