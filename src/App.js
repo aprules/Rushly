@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Scraper from './pages/Scraper';
+import Leads from './pages/Leads';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -20,14 +21,19 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#0f1117',color:'#00c896',fontSize:'14px'}}>Loading...</div>;
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f5f6fa', color: '#9094a8', fontSize: '14px', fontFamily: 'Segoe UI, sans-serif' }}>
+      Loading...
+    </div>
+  );
 
   return (
     <Routes>
-      <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
+      <Route path="/login"     element={!session ? <Login /> : <Navigate to="/dashboard" />} />
       <Route path="/dashboard" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />} />
-      <Route path="/scraper" element={session ? <Scraper session={session} /> : <Navigate to="/login" />} />
-      <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+      <Route path="/scraper"   element={session ? <Scraper session={session} /> : <Navigate to="/login" />} />
+      <Route path="/leads"     element={session ? <Leads session={session} /> : <Navigate to="/login" />} />
+      <Route path="*"          element={<Navigate to={session ? "/dashboard" : "/login"} />} />
     </Routes>
   );
 }
