@@ -171,7 +171,8 @@ export default function Scraper({ session }) {
           }
         }
         const latestRows = Object.values(latest);
-        const allDone = latestRows.length > 0 && latestRows.every(r => r.done);
+        const expectedSchools = activeSchoolsCountRef.current || 1;
+        const allDone = latestRows.length >= expectedSchools && latestRows.every(r => r.done);
         if (allDone) finishScrape();
       } catch(e) {}
     }, 1000);
