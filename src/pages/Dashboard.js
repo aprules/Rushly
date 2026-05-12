@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 export default function Dashboard({ session }) {
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
@@ -24,13 +27,13 @@ export default function Dashboard({ session }) {
           <div style={{fontSize:'12px',color:'#555'}}>Select a tool to get started</div>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))',gap:'16px'}}>
-          <div style={{background:'#161921',border:'1px solid #1e2130',borderRadius:'12px',padding:'24px',cursor:'pointer'}}>
+          <div onClick={() => navigate('/scraper')} style={{background:'#161921',border:'1px solid #1e2130',borderRadius:'12px',padding:'24px',cursor:'pointer',transition:'border-color 0.15s'}} onMouseEnter={e=>e.currentTarget.style.borderColor='#00c896'} onMouseLeave={e=>e.currentTarget.style.borderColor='#1e2130'}>
             <div style={{width:'40px',height:'40px',background:'#0a2a1f',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:'14px'}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c896" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </div>
             <div style={{fontSize:'14px',fontWeight:'600',color:'#fff',marginBottom:'6px'}}>CampusLabs Scraper</div>
             <div style={{fontSize:'12px',color:'#555',lineHeight:'1.5'}}>Scrape org contact info from any CampusLabs school directory</div>
-            <div style={{marginTop:'14px',fontSize:'11px',color:'#00c896',fontWeight:'500'}}>Available →</div>
+            <div style={{marginTop:'14px',fontSize:'11px',color:'#00c896',fontWeight:'500'}}>Open tool →</div>
           </div>
           <div style={{background:'#161921',border:'1px solid #1e2130',borderRadius:'12px',padding:'24px',opacity:'0.5'}}>
             <div style={{width:'40px',height:'40px',background:'#1a1d26',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:'14px'}}>

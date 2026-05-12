@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Scraper from './pages/Scraper';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -25,6 +26,7 @@ function App() {
     <Routes>
       <Route path="/login" element={!session ? <Login /> : <Navigate to="/dashboard" />} />
       <Route path="/dashboard" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />} />
+      <Route path="/scraper" element={session ? <Scraper session={session} /> : <Navigate to="/login" />} />
       <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
     </Routes>
   );
