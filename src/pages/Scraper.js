@@ -163,10 +163,16 @@ export default function Scraper({ session }) {
         lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
-        const allDone = data.every(r => r.done);
-        if (allDone && data.length >= activeSchoolsCountRef.current) {
-          finishScrape();
+        // Get latest row per school (highest id) and check if all done
+        const latest = {};
+        for (const row of data) {
+          if (!latest[row.school_name] || row.id > latest[row.school_name].id) {
+            latest[row.school_name] = row;
+          }
         }
+        const latestRows = Object.values(latest);
+        const allDone = latestRows.length > 0 && latestRows.every(r => r.done);
+        if (allDone) finishScrape();
       } catch(e) {}
     }, 1000);
   };
