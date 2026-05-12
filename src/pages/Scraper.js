@@ -80,8 +80,6 @@ export default function Scraper({ session }) {
   const sessionIdRef = useRef('');
   const activeSchoolsCountRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
-  const activeSchoolsCountRef = useRef(0);
-  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     const saved = localStorage.getItem('rushly_schools');
