@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
-const EXTENSION_ID = 'fdmnjnbkbknbphichknjepbmglmbckgm';
+const EXTENSION_ID = 'ikegichhgohflbleliekfakapchldaop';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const NAV_ITEMS = [
