@@ -78,6 +78,10 @@ export default function Scraper({ session }) {
   const [schoolLogs, setSchoolLogs] = useState({});
   const pollRef = useRef(null);
   const sessionIdRef = useRef('');
+  const activeSchoolsCountRef = useRef(0);
+  const lastActivityRef = useRef(Date.now());
+  const activeSchoolsCountRef = useRef(0);
+  const lastActivityRef = useRef(Date.now());
 
   useEffect(() => {
     const saved = localStorage.getItem('rushly_schools');
@@ -109,9 +113,23 @@ export default function Scraper({ session }) {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   };
 
+  const finishScrape = () => {
+    stopPolling();
+    setRunning(false);
+    setDone(true);
+    setProgress(100);
+    setTimeout(() => { setDone(false); setStatus(''); setProgress(0); }, 5000);
+  };
+
   const startPolling = (sessionId) => {
     stopPolling();
+    lastActivityRef.current = Date.now();
     pollRef.current = setInterval(async () => {
+      // No-activity timeout — stop animation if nothing changes for 90 seconds
+      if (Date.now() - lastActivityRef.current > 90000) {
+        finishScrape();
+        return;
+      }
       try {
         const { data } = await supabase
           .from('scrape_progress')
@@ -143,15 +161,12 @@ export default function Scraper({ session }) {
 
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
         setSchoolLogs(logs);
+        lastActivityRef.current = Date.now();
 
-        const activeSchools = schools.slice(0, schoolCount).filter(s => s.name && s.url);
+        // Use ref for school count so it's always current
         const allDone = data.every(r => r.done);
-        if (allDone && data.length === activeSchools.length) {
-          stopPolling();
-          setRunning(false);
-          setDone(true);
-          setProgress(100);
-          setTimeout(() => { setDone(false); setStatus(''); setProgress(0); }, 5000);
+        if (allDone && data.length >= activeSchoolsCountRef.current) {
+          finishScrape();
         }
       } catch(e) {}
     }, 1000);
@@ -171,6 +186,7 @@ export default function Scraper({ session }) {
 
     const sessionId = Date.now().toString();
     sessionIdRef.current = sessionId;
+    activeSchoolsCountRef.current = activeSchools.length;
 
     setRunning(true);
     setDone(false);
