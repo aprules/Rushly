@@ -153,13 +153,20 @@ export default function Scraper({ session }) {
             time:    row.time_taken || '',
             done:    row.done
           };
-          if (row.status) setStatus(row.status);
-          if (row.pct)    setProgress(row.pct);
+          if (row.status) {
+            // Make status more descriptive
+            let displayStatus = row.status;
+            if (row.status.includes('Writing')) displayStatus = '📝 Writing to Google Sheets...';
+            else if (row.status.includes('Opening') || row.status.includes('opening')) displayStatus = '🌐 ' + row.status;
+            else if (row.status.includes('done')) displayStatus = '✓ ' + row.school_name + ' complete';
+            setStatus(displayStatus);
+          }
+          if (row.pct) setProgress(row.pct);
         }
 
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
-        setSchoolLogs(logs);
-        // Debug
+        // Merge logs to prevent flicker — keep existing entries, only update changed ones
+        setSchoolLogs(prev => ({ ...prev, ...logs }));
         lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
