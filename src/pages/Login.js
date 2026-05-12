@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
+import logo from '../assets/rushly.png';
 
-// ─── FLOATING DOTS (particles.js style) ───
+// ─── FLOATING DOTS ───
 function FloatingDots() {
   const canvasRef = useRef(null);
   useEffect(() => {
@@ -13,8 +14,8 @@ function FloatingDots() {
     resize();
     window.addEventListener('resize', resize);
     const dots = Array.from({ length: 60 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
       r: Math.random() * 2 + 0.5,
       vx: (Math.random() - 0.5) * 0.3,
       vy: (Math.random() - 0.5) * 0.3,
@@ -39,41 +40,6 @@ function FloatingDots() {
     return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
   }, []);
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />;
-}
-
-// ─── RUSHLY LOGO ───
-// Matches DecoGro style: bold rounded letter + chevrons + brand name
-// Uses Google Fonts Nunito (loaded via @import in style tag)
-function RushlyLogo({ dark = false }) {
-  const color = '#00b8a3';
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-      {/* R with chevron arrows — SVG matching DecoGro D style */}
-      <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Outer R shape — thick, rounded, like the DecoGro D */}
-        {/* Vertical stem */}
-        <path d="M10 6 L10 46" stroke={color} strokeWidth="8" strokeLinecap="round"/>
-        {/* Top arc of R */}
-        <path d="M10 6 C10 6 36 6 36 18 C36 30 10 30 10 30" stroke={color} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        {/* Diagonal leg of R */}
-        <path d="M10 30 L34 46" stroke={color} strokeWidth="8" strokeLinecap="round"/>
-        {/* 3 left-pointing chevrons inside the bump — exactly like DecoGro arrows on D */}
-        <polyline points="26,14 20,18 26,22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9"/>
-        <polyline points="21,14 15,18 21,22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9"/>
-        <polyline points="16,14 10,18 16,22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.7"/>
-      </svg>
-      {/* "ushly" text — Nunito Bold, same teal */}
-      <span style={{
-        fontFamily: "'Nunito', 'Poppins', 'DM Sans', sans-serif",
-        fontSize: '36px',
-        fontWeight: '800',
-        color: color,
-        letterSpacing: '-1px',
-        lineHeight: 1,
-        marginLeft: '-2px'
-      }}>ushly</span>
-    </div>
-  );
 }
 
 export default function Login() {
@@ -125,7 +91,6 @@ export default function Login() {
 
   return (
     <>
-      {/* Load Nunito font to match DecoGro */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');`}</style>
 
       <div style={{
@@ -138,41 +103,51 @@ export default function Login() {
         background: '#f3f3f9'
       }}>
 
-        {/* ── TOP BACKGROUND — cover.jpg + navy overlay + dots ── */}
+        {/* ── NAVY BACKGROUND WITH COVER IMAGE ── */}
         <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '60%',
+          position: 'absolute', top: 0, left: 0, right: 0,
+          height: '75%', zIndex: 0,
           backgroundImage: 'url("https://software.apparelprofits.com/templates/themes/tsc/skin/images/cover.jpg")',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          zIndex: 0
+          backgroundPosition: 'center top',
         }}>
-          {/* Dark navy overlay — same as DecoGro bg-overlay */}
+          {/* Navy overlay */}
           <div style={{
             position: 'absolute', inset: 0,
-            background: 'linear-gradient(160deg, rgba(64,81,137,0.93) 0%, rgba(58,66,128,0.92) 50%, rgba(74,63,122,0.93) 100%)'
+            background: 'rgba(64,81,137,0.88)'
           }} />
-          {/* Floating dots */}
+          {/* Dots */}
           <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
             <FloatingDots />
           </div>
         </div>
 
-        {/* ── WAVE SVG DIVIDER — exact from DecoGro HTML ── */}
-        <div style={{ position: 'absolute', top: 'calc(60% - 60px)', left: 0, right: 0, height: '120px', zIndex: 2 }}>
-          <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1440 120"
-            preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
-            <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z" fill="#f3f3f9"/>
+        {/* ── WAVE DIVIDER — exact DecoGro SVG path, positioned low ── */}
+        <div style={{
+          position: 'absolute',
+          top: 'calc(75% - 80px)',
+          left: 0, right: 0,
+          height: '160px',
+          zIndex: 2
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 120"
+            preserveAspectRatio="none"
+            style={{ width: '100%', height: '100%', display: 'block' }}>
+            <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40 L1440 140 L0 140z" fill="#f3f3f9"/>
           </svg>
         </div>
 
         {/* ── LIGHT BOTTOM ── */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%', background: '#f3f3f9', zIndex: 1 }} />
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: '25%', background: '#f3f3f9', zIndex: 1
+        }} />
 
-        {/* ── CARD ── */}
+        {/* ── CARD — sits in the navy area like DecoGro ── */}
         <div style={{
           position: 'relative', zIndex: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flex: 1, padding: '60px 20px 20px'
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+          flex: 1, paddingTop: '40px', paddingBottom: '20px', paddingLeft: '20px', paddingRight: '20px'
         }}>
           <div style={{
             width: '440px',
@@ -183,20 +158,21 @@ export default function Login() {
           }}>
 
             {/* Logo */}
-            <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px' }}>
-                <RushlyLogo />
-              </div>
-
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+              <img
+                src={logo}
+                alt="Rushly"
+                style={{ height: '48px', width: 'auto', marginBottom: '14px' }}
+              />
               {!forgotMode && (
                 <>
-                  <h5 style={{ fontSize: '16px', fontWeight: '700', color: '#405189', margin: '0 0 6px' }}>Welcome Back!</h5>
+                  <h5 style={{ fontSize: '16px', fontWeight: '700', color: '#405189', margin: '0 0 5px' }}>Welcome Back!</h5>
                   <p style={{ fontSize: '13px', color: '#878a99', margin: 0 }}>Sign in to continue to Rushly.</p>
                 </>
               )}
               {forgotMode && (
                 <>
-                  <h5 style={{ fontSize: '16px', fontWeight: '700', color: '#405189', margin: '0 0 6px' }}>Reset Password</h5>
+                  <h5 style={{ fontSize: '16px', fontWeight: '700', color: '#405189', margin: '0 0 5px' }}>Reset Password</h5>
                   <p style={{ fontSize: '13px', color: '#878a99', margin: 0 }}>We'll send a reset link to your email.</p>
                 </>
               )}
@@ -206,7 +182,7 @@ export default function Login() {
             {error && (
               <div style={{
                 background: '#fff5f5', border: '1px solid #fecaca', borderRadius: '6px',
-                padding: '10px 14px', fontSize: '13px', color: '#e05c5c', margin: '16px 0'
+                padding: '10px 14px', fontSize: '13px', color: '#e05c5c', margin: '12px 0'
               }}>{error}</div>
             )}
 
@@ -215,13 +191,13 @@ export default function Login() {
               <div style={{
                 background: '#f0fdf8', border: '1px solid #b3eed9', borderRadius: '6px',
                 padding: '12px 14px', fontSize: '13px', color: '#00875a',
-                margin: '16px 0', textAlign: 'center'
+                margin: '12px 0', textAlign: 'center'
               }}>✓ Reset link sent! Check your email.</div>
             )}
 
             {/* ── LOGIN FORM ── */}
             {!forgotMode && (
-              <form onSubmit={handleLogin} style={{ marginTop: '20px' }}>
+              <form onSubmit={handleLogin} style={{ marginTop: '16px' }}>
 
                 <div style={{ marginBottom: '14px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Email</label>
@@ -269,7 +245,7 @@ export default function Login() {
                   width: '100%', height: '44px', background: '#0ab39c',
                   color: '#fff', border: 'none', borderRadius: '6px',
                   fontSize: '14px', fontWeight: '700', cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.8 : 1, transition: 'opacity 0.15s',
+                  opacity: loading ? 0.8 : 1, transition: 'background 0.15s',
                   fontFamily: "'Nunito', sans-serif", letterSpacing: '0.3px'
                 }}
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#099885'; }}
@@ -277,13 +253,12 @@ export default function Login() {
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </button>
-
               </form>
             )}
 
             {/* ── FORGOT PASSWORD FORM ── */}
             {forgotMode && !forgotSent && (
-              <form onSubmit={handleForgotPassword} style={{ marginTop: '20px' }}>
+              <form onSubmit={handleForgotPassword} style={{ marginTop: '16px' }}>
                 <div style={{ marginBottom: '20px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#1a1d2e', marginBottom: '6px' }}>Email</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
