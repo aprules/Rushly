@@ -138,10 +138,19 @@ export default function Scraper({ session }) {
 
         if (!data || data.length === 0) return;
 
+        // Get only the latest row per school (highest id)
+        const latestBySchool = {};
+        for (const row of data) {
+          if (!latestBySchool[row.school_name] || row.id > latestBySchool[row.school_name].id) {
+            latestBySchool[row.school_name] = row;
+          }
+        }
+        const latestRows = Object.values(latestBySchool);
+
         let totalScraped = 0, totalEmails = 0, totalPhones = 0, totalMatched = 0;
         const logs = {};
 
-        for (const row of data) {
+        for (const row of latestRows) {
           totalScraped += row.scraped || 0;
           totalEmails  += row.emails  || 0;
           totalPhones  += row.phones  || 0;
@@ -156,14 +165,14 @@ export default function Scraper({ session }) {
             done:    row.done
           };
           if (row.status) setStatus(row.status);
-          if (row.pct) {
-            setProgress(row.pct);
-            lastActivityRef.current = Date.now(); // only reset on real progress
-          }
+          if (row.pct)    setProgress(row.pct);
         }
 
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
         setSchoolLogs(logs);
+        // Debug
+        console.log('[poll] latestRows:', latestRows.length, 'allDone:', latestRows.every(r => r.done));
+        lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
         const allDone = data.every(r => r.done);
