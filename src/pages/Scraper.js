@@ -171,12 +171,12 @@ export default function Scraper({ session }) {
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
         setSchoolLogs(logs);
         // Debug
-        console.log('[poll] latestRows:', latestRows.length, 'allDone:', latestRows.every(r => r.done));
         lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
-        const allDone = data.every(r => r.done);
-        if (allDone && data.length >= activeSchoolsCountRef.current) {
+        const allDone = latestRows.length > 0 && latestRows.every(r => r.done);
+        console.log('[poll] latestRows:', latestRows.length, 'allDone:', allDone, latestRows.map(r => r.done));
+        if (allDone) {
           finishScrape();
         }
       } catch(e) {}
