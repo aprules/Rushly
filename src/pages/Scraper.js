@@ -258,7 +258,7 @@ export default function Scraper({ session }) {
 
 
       {/* Main content */}
-      <div style={{ marginLeft: '155px', flex: 1, display: 'flex', minHeight: '100vh' }}>
+      <div style={{ marginLeft: '165px', flex: 1, display: 'flex', minHeight: '100vh' }}>
 
         {/* LEFT COLUMN */}
         <div style={{ width: '400px', flexShrink: 0, padding: '28px 24px', borderRight: '1px solid #e8eaf0', background: '#f5f6fa', overflowY: 'auto' }}>
@@ -377,7 +377,7 @@ export default function Scraper({ session }) {
                   <div>
                     <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e' }}>{name}{d.total ? ` — ${d.total} orgs` : ''}</span>
                     {!d.done && d.orgs > 0 && d.total > 0 && (
-                      <span style={{ fontSize: '11px', color: '#9094a8', marginLeft: '155px' }}>{d.orgs}/{d.total} scraped</span>
+                      <span style={{ fontSize: '11px', color: '#9094a8', marginLeft: '165px' }}>{d.orgs}/{d.total} scraped</span>
                     )}
                   </div>
                   {d.done

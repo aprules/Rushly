@@ -27,7 +27,7 @@ const PAGE_TITLES = {
   '/review': 'Review',
 };
 
-export const SIDEBAR_WIDTH = '155px';
+export const SIDEBAR_WIDTH = '165px';
 
 export default function Sidebar({ session }) {
   const navigate = useNavigate();
