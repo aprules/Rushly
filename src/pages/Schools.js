@@ -141,9 +141,20 @@ export default function Schools({ session }) {
       const url = await searchCampusLabsUrl(school.name);
 
       if (url) {
-        await supabase.from('schools').update({ suggested_url: url, status: 'needs_review' }).eq('id', school.id);
-        found++;
-        results.push({ id: school.id, name: school.name, url, found: true });
+        const { data: existing } = await supabase
+          .from('schools')
+          .select('id, name')
+          .or(`campuslabs_url.eq.${url},suggested_url.eq.${url}`)
+          .neq('id', school.id)
+          .limit(1);
+        if (existing && existing.length > 0) {
+          notFound++;
+          results.push({ id: school.id, name: school.name, url: null, found: false, note: `duplicate of ${existing[0].name}` });
+        } else {
+          await supabase.from('schools').update({ suggested_url: url, status: 'needs_review' }).eq('id', school.id);
+          found++;
+          results.push({ id: school.id, name: school.name, url, found: true });
+        }
       } else {
         notFound++;
         results.push({ id: school.id, name: school.name, url: null, found: false });
@@ -312,8 +323,9 @@ export default function Schools({ session }) {
                   {findResults.slice().reverse().map((r, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '3px 0', borderBottom: '1px solid #f5f6fa' }}>
                       <span style={{ color: r.found ? '#00c896' : '#e05c5c', fontWeight: '700', flexShrink: 0, width: '12px' }}>{r.found ? '✓' : '✗'}</span>
-                      <span style={{ color: '#1a1d2e', fontWeight: '500', flexShrink: 0, minWidth: '220px' }}>{r.name}</span>
-                      {r.url && <span style={{ color: '#8b5cf6', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</span>}
+                      <span style={{ color: '#1a1d2e', fontWeight: '500', flexShrink: 0, minWidth: '200px' }}>{r.name}</span>
+                      {r.url && <span style={{ color: '#8b5cf6', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{r.url}</span>}
+                      {r.note && <span style={{ color: '#f59e0b', fontSize: '11px', flexShrink: 0 }}>⚠ {r.note}</span>}
                     </div>
                   ))}
                 </div>
@@ -338,7 +350,7 @@ export default function Schools({ session }) {
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>#</th>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>School Name</th>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>CampusLabs URL</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>Status</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>{filterStatus === 'needs_review' ? 'Action' : 'Status'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -359,22 +371,16 @@ export default function Schools({ session }) {
                   >
                     <td style={{ padding: '10px 16px', color: '#c5c7d4', fontSize: '12px' }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
-                    <td style={{ padding: '10px 16px', maxWidth: '320px' }}>
+                    <td style={{ padding: '10px 16px' }}>
                       {school.status === 'needs_review' && school.suggested_url ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <a href={school.suggested_url} target="_blank" rel="noopener noreferrer"
-                            style={{ color: '#8b5cf6', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', display: 'block' }}
-                            onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                            onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                          >{school.suggested_url}</a>
-                          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                            <button onClick={() => handleApprove(school)} style={{ height: '24px', padding: '0 10px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✓ Good</button>
-                            <button onClick={() => handleReject(school)} style={{ height: '24px', padding: '0 10px', background: '#fef2f2', color: '#e05c5c', border: '1px solid #fecaca', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✗ No Good</button>
-                          </div>
-                        </div>
+                        <a href={school.suggested_url} target="_blank" rel="noopener noreferrer"
+                          style={{ color: '#8b5cf6', textDecoration: 'none', fontSize: '12px' }}
+                          onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                        >{school.suggested_url}</a>
                       ) : school.campuslabs_url ? (
                         <a href={school.campuslabs_url} target="_blank" rel="noopener noreferrer"
-                          style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                          style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px' }}
                           onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
                           onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
                         >{school.campuslabs_url}</a>
@@ -382,7 +388,16 @@ export default function Schools({ session }) {
                         <span style={{ color: '#c5c7d4', fontSize: '12px' }}>—</span>
                       )}
                     </td>
-                    <td style={{ padding: '10px 16px' }}><StatusBadge school={school} /></td>
+                    <td style={{ padding: '10px 16px' }}>
+                      {school.status === 'needs_review' && school.suggested_url ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button onClick={() => handleApprove(school)} style={{ height: '26px', padding: '0 12px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✓ Good</button>
+                          <button onClick={() => handleReject(school)} style={{ height: '26px', padding: '0 12px', background: '#fef2f2', color: '#e05c5c', border: '1px solid #fecaca', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✗ No Good</button>
+                        </div>
+                      ) : (
+                        <StatusBadge school={school} />
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
