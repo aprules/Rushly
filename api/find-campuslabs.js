@@ -7,26 +7,63 @@ export default async function handler(req, res) {
   const { schoolName } = req.body || {};
   if (!schoolName) return res.status(400).json({ url: null });
 
-  try {
-    // Search Google for the school's CampusLabs URL
-    const query = encodeURIComponent(`${schoolName} campuslabs.com engage`);
-    const searchRes = await fetch(`https://www.google.com/search?q=${query}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  // Generate slug candidates from school name
+  const slugCandidates = generateSlugs(schoolName);
+  
+  for (const slug of slugCandidates) {
+    const url = `https://${slug}.campuslabs.com/engage`;
+    try {
+      const r = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+      if (r.ok || r.status === 403 || r.status === 405) {
+        return res.status(200).json({ url });
       }
-    });
-    const html = await searchRes.text();
-
-    // Extract campuslabs.com URLs from the search results
-    const matches = html.match(/https?:\/\/[a-z0-9\-]+\.campuslabs\.com\/engage[^\s"&<]*/gi);
-    if (!matches || matches.length === 0) return res.status(200).json({ url: null });
-
-    // Clean and return the first match
-    const url = matches[0].replace(/\\u003d/g, '=').split('&')[0];
-    if (!url.includes('campuslabs.com')) return res.status(200).json({ url: null });
-
-    return res.status(200).json({ url });
-  } catch (e) {
-    return res.status(200).json({ url: null, error: e.message });
+    } catch(e) {}
   }
+
+  return res.status(200).json({ url: null });
+}
+
+function generateSlugs(name) {
+  const slugs = [];
+
+  // Remove common suffixes
+  const cleaned = name
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim();
+
+  const words = cleaned.split(/\s+/);
+
+  // Remove common stop words
+  const stopWords = new Set(['university', 'of', 'the', 'at', 'a', 'and', 'college', 'institute', 'technology', 'state', 'school']);
+
+  // Candidate 1: all words joined
+  slugs.push(words.join(''));
+
+  // Candidate 2: meaningful words only (no stop words)
+  const meaningful = words.filter(w => !stopWords.has(w));
+  if (meaningful.length > 0 && meaningful.join('') !== words.join('')) {
+    slugs.push(meaningful.join(''));
+  }
+
+  // Candidate 3: first meaningful word only
+  if (meaningful.length > 0) slugs.push(meaningful[0]);
+
+  // Candidate 4: last word (often the city/identifier)
+  const last = words[words.length - 1];
+  if (!slugs.includes(last)) slugs.push(last);
+
+  // Candidate 5: words with dashes
+  slugs.push(words.join('-'));
+  slugs.push(meaningful.join('-'));
+
+  // Candidate 6: abbreviation (first letters of meaningful words)
+  if (meaningful.length > 1) {
+    slugs.push(meaningful.map(w => w[0]).join(''));
+  }
+
+  // Remove duplicates and empty
+  return [...new Set(slugs)].filter(s => s.length > 1);
 }
