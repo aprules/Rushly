@@ -175,7 +175,7 @@ export default function Schools({ session }) {
       <Sidebar session={session} />
 
       {/* Main */}
-      <div style={{ marginLeft: '165px', flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: '170px', flex: 1, padding: '32px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
