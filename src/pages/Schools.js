@@ -5,8 +5,6 @@ import { supabase } from '../supabaseClient';
 const DECOGRO_API = 'https://mcp.decogro.com/api';
 const DECOGRO_KEY = 'ak_live_14d8946a76e2c99814586ab48a64c555.sk_63c8b9956ddd90770208b352d9fb01b9ff463b4fdd4fd6548bb5663e2d951113';
 const TABLE_ID = 'schools';
-const CAMPUSLABS_STATUS_FIELD = 'custom_field_2086';
-const DONE_KEY = '007f25362d';
 
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
