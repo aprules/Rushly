@@ -19,26 +19,17 @@ const NAV_SECTIONS = [
 ];
 
 const PAGE_SIZE = 50;
+const FIND_BATCH_SIZE = 100;
 
 async function searchCampusLabsUrl(schoolName) {
   try {
-    
-    const res = await fetch(`https://api.anthropic.com/v1/messages`, {
+    const res = await fetch('/api/find-campuslabs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: `What is the CampusLabs Engage URL for ${schoolName}? It typically looks like https://schoolname.campuslabs.com/engage or https://schoolname.campuslabs.com/engage/organizations. Reply with ONLY the URL or "none" if you don't know it.`
-        }]
-      })
+      body: JSON.stringify({ schoolName })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text?.trim() || 'none';
-    if (text === 'none' || !text.includes('campuslabs.com')) return null;
-    return text;
+    return data.url || null;
   } catch(e) {
     return null;
   }
@@ -55,12 +46,15 @@ export default function Schools({ session }) {
   const [total, setTotal] = useState(0);
 
   // Find URLs state
+  const [noUrlTotal, setNoUrlTotal] = useState(0);
+  const [findPage, setFindPage] = useState(1);
   const [finding, setFinding] = useState(false);
   const [findProgress, setFindProgress] = useState({ current: 0, total: 0, found: 0, notFound: 0 });
   const [findResults, setFindResults] = useState([]);
   const stopFindRef = useRef(false);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const findTotalPages = Math.ceil(noUrlTotal / FIND_BATCH_SIZE);
 
   const fetchSchools = useCallback(async () => {
     setLoading(true);
@@ -90,6 +84,16 @@ export default function Schools({ session }) {
       if (err) throw err;
       setSchools(data || []);
       setTotal(count || 0);
+
+      // Also fetch total no-url count for batch pages
+      if (filterStatus === 'no_url' || filterStatus === '') {
+        const { count: noUrlCount } = await supabase
+          .from('schools')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending')
+          .or('campuslabs_url.is.null,campuslabs_url.eq.');
+        setNoUrlTotal(noUrlCount || 0);
+      }
     } catch (e) {
       setError('Failed to load schools.');
     }
@@ -101,15 +105,15 @@ export default function Schools({ session }) {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
-  // Find CampusLabs URLs for no-URL schools
   const handleFindUrls = async () => {
+    // Fetch the specific batch/page of no-url schools
     const { data: noUrlSchools } = await supabase
       .from('schools')
       .select('id, name')
       .eq('status', 'pending')
       .or('campuslabs_url.is.null,campuslabs_url.eq.')
       .order('name', { ascending: true })
-      .limit(50);
+      .range((findPage - 1) * FIND_BATCH_SIZE, findPage * FIND_BATCH_SIZE - 1);
 
     if (!noUrlSchools || noUrlSchools.length === 0) return;
 
@@ -143,23 +147,13 @@ export default function Schools({ session }) {
     fetchSchools();
   };
 
-  // Approve suggested URL
   const handleApprove = async (school) => {
-    await supabase.from('schools').update({
-      campuslabs_url: school.suggested_url,
-      suggested_url: null,
-      status: 'pending'
-    }).eq('id', school.id);
+    await supabase.from('schools').update({ campuslabs_url: school.suggested_url, suggested_url: null, status: 'pending' }).eq('id', school.id);
     fetchSchools();
   };
 
-  // Reject suggested URL
   const handleReject = async (school) => {
-    await supabase.from('schools').update({
-      suggested_url: null,
-      status: 'pending',
-      campuslabs_url: null
-    }).eq('id', school.id);
+    await supabase.from('schools').update({ suggested_url: null, status: 'pending', campuslabs_url: null }).eq('id', school.id);
     fetchSchools();
   };
 
@@ -229,7 +223,7 @@ export default function Schools({ session }) {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '360px' }}>
             <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9094a8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search school name..."
@@ -248,45 +242,74 @@ export default function Schools({ session }) {
             <button onClick={() => { setSearch(''); setFilterStatus(''); }}
               style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>✕ Clear</button>
           )}
-          {filterStatus === 'no_url' && !finding && (
-            <button onClick={handleFindUrls}
-              style={{ height: '36px', padding: '0 16px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-              Find CampusLabs URLs
-            </button>
-          )}
-          {finding && (
-            <button onClick={() => { stopFindRef.current = true; }}
-              style={{ height: '36px', padding: '0 16px', background: '#e05c5c', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-              ✕ Stop
-            </button>
-          )}
         </div>
 
-        {/* Find progress */}
-        {(finding || findResults.length > 0) && (
+        {/* Find URLs panel — only shown when No URL filter is active */}
+        {filterStatus === 'no_url' && (
           <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1a1d2e' }}>
-                {finding ? `Searching... ${findProgress.current} / ${findProgress.total}` : `Done — ${findProgress.found} found, ${findProgress.notFound} not found`}
-              </div>
-              <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
-                <span style={{ color: '#00c896', fontWeight: '600' }}>✓ {findProgress.found} found</span>
-                <span style={{ color: '#e05c5c', fontWeight: '600' }}>✗ {findProgress.notFound} not found</span>
-              </div>
-            </div>
-            <div style={{ height: '4px', background: '#e8eaf0', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
-              <div style={{ height: '100%', background: '#8b5cf6', borderRadius: '2px', transition: 'width 0.3s ease', width: findProgress.total ? `${(findProgress.current / findProgress.total) * 100}%` : '0%' }} />
-            </div>
-            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {findResults.slice().reverse().map((r, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '4px 0', borderBottom: '1px solid #f5f6fa' }}>
-                  <span style={{ color: r.found ? '#00c896' : '#e05c5c', fontWeight: '600', flexShrink: 0 }}>{r.found ? '✓' : '✗'}</span>
-                  <span style={{ color: '#1a1d2e', fontWeight: '500', flexShrink: 0, minWidth: '200px' }}>{r.name}</span>
-                  {r.url && <span style={{ color: '#2563eb', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: finding || findResults.length > 0 ? '12px' : '0' }}>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1a1d2e' }}>Find CampusLabs URLs</div>
+                <div style={{ fontSize: '11px', color: '#9094a8', marginTop: '2px' }}>
+                  {noUrlTotal} schools without URL · {findTotalPages} pages of 100
                 </div>
-              ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {!finding && (
+                  <>
+                    <select
+                      value={findPage}
+                      onChange={e => { setFindPage(Number(e.target.value)); setFindResults([]); }}
+                      style={{ height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: '#1a1d2e', outline: 'none', cursor: 'pointer' }}
+                    >
+                      {Array.from({ length: findTotalPages }, (_, i) => (
+                        <option key={i + 1} value={i + 1}>
+                          Page {i + 1} (#{i * FIND_BATCH_SIZE + 1}–{Math.min((i + 1) * FIND_BATCH_SIZE, noUrlTotal)})
+                        </option>
+                      ))}
+                    </select>
+                    <button onClick={handleFindUrls}
+                      style={{ height: '34px', padding: '0 16px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                      Search Page {findPage}
+                    </button>
+                  </>
+                )}
+                {finding && (
+                  <button onClick={() => { stopFindRef.current = true; }}
+                    style={{ height: '34px', padding: '0 14px', background: '#e05c5c', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>
+                    ✕ Stop
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Progress */}
+            {(finding || findResults.length > 0) && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                  <span style={{ color: '#9094a8' }}>
+                    {finding ? `Searching ${findProgress.current} of ${findProgress.total}...` : `Completed — page ${findPage}`}
+                  </span>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <span style={{ color: '#00c896', fontWeight: '600' }}>✓ {findProgress.found} found</span>
+                    <span style={{ color: '#e05c5c', fontWeight: '600' }}>✗ {findProgress.notFound} not found</span>
+                  </div>
+                </div>
+                <div style={{ height: '4px', background: '#e8eaf0', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
+                  <div style={{ height: '100%', background: '#8b5cf6', borderRadius: '2px', transition: 'width 0.3s ease', width: findProgress.total ? `${(findProgress.current / findProgress.total) * 100}%` : '0%' }} />
+                </div>
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {findResults.slice().reverse().map((r, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '3px 0', borderBottom: '1px solid #f5f6fa' }}>
+                      <span style={{ color: r.found ? '#00c896' : '#e05c5c', fontWeight: '700', flexShrink: 0, width: '12px' }}>{r.found ? '✓' : '✗'}</span>
+                      <span style={{ color: '#1a1d2e', fontWeight: '500', flexShrink: 0, minWidth: '220px' }}>{r.name}</span>
+                      {r.url && <span style={{ color: '#8b5cf6', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -336,10 +359,8 @@ export default function Schools({ session }) {
                             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
                           >{school.suggested_url}</a>
                           <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                            <button onClick={() => handleApprove(school)}
-                              style={{ height: '24px', padding: '0 10px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✓ Good</button>
-                            <button onClick={() => handleReject(school)}
-                              style={{ height: '24px', padding: '0 10px', background: '#fef2f2', color: '#e05c5c', border: '1px solid #fecaca', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✗ No Good</button>
+                            <button onClick={() => handleApprove(school)} style={{ height: '24px', padding: '0 10px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✓ Good</button>
+                            <button onClick={() => handleReject(school)} style={{ height: '24px', padding: '0 10px', background: '#fef2f2', color: '#e05c5c', border: '1px solid #fecaca', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✗ No Good</button>
                           </div>
                         </div>
                       ) : school.campuslabs_url ? (
