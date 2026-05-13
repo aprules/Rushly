@@ -47,12 +47,8 @@ function DecogroAnimation({ running }) {
   }, []);
 
   useEffect(() => {
-    if (running) {
-      activeRef.current = true;
-      runLoop();
-    } else {
-      activeRef.current = false;
-    }
+    if (running) { activeRef.current = true; runLoop(); }
+    else { activeRef.current = false; }
     return () => { activeRef.current = false; };
   }, [running, runLoop]);
 
@@ -61,10 +57,7 @@ function DecogroAnimation({ running }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', padding: '12px 0' }}>
       {letters.map((l, i) => (
-        <span key={i} style={{
-          fontSize: '20px', fontWeight: '700', color: '#00c896',
-          opacity: opacities[i], transition: 'opacity 300ms ease', letterSpacing: '3px'
-        }}>{l}</span>
+        <span key={i} style={{ fontSize: '20px', fontWeight: '700', color: '#00c896', opacity: opacities[i], transition: 'opacity 300ms ease', letterSpacing: '3px' }}>{l}</span>
       ))}
     </div>
   );
@@ -74,9 +67,11 @@ export default function Scraper({ session }) {
   const navigate = useNavigate();
   const [schoolCount, setSchoolCount] = useState(1);
   const [schools, setSchools] = useState([
-    { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' },
-    { name: '', url: '' }, { name: '', url: '' }
+    { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' },
+    { id: null, name: '', url: '' }, { id: null, name: '', url: '' }
   ]);
+  const [availableSchools, setAvailableSchools] = useState([]);
+  const [loadingSchools, setLoadingSchools] = useState(true);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
   const [status, setStatus] = useState('');
@@ -88,39 +83,64 @@ export default function Scraper({ session }) {
   const activeSchoolsCountRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
 
+  // Load pending/in_progress schools with URLs from Supabase
   useEffect(() => {
-    const saved = localStorage.getItem('rushly_schools');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSchools(prev => prev.map((s, i) => parsed[i] || s));
-        const count = parsed.filter(s => s.name || s.url).length;
-        if (count > 0) setSchoolCount(count);
-      } catch(e) {}
-    }
+    const load = async () => {
+      setLoadingSchools(true);
+      const { data } = await supabase
+        .from('schools')
+        .select('id, name, campuslabs_url, status')
+        .in('status', ['pending', 'in_progress'])
+        .not('campuslabs_url', 'is', null)
+        .neq('campuslabs_url', '')
+        .order('name', { ascending: true });
+      setAvailableSchools(data || []);
+      setLoadingSchools(false);
+    };
+    load();
   }, []);
 
-  const updateSchool = (i, field, value) => {
-    setSchools(prev => { const n = [...prev]; n[i] = { ...n[i], [field]: value }; return n; });
+  const selectSchool = (i, schoolId) => {
+    const found = availableSchools.find(s => s.id === parseInt(schoolId));
+    setSchools(prev => {
+      const n = [...prev];
+      n[i] = found ? { id: found.id, name: found.name, url: found.campuslabs_url } : { id: null, name: '', url: '' };
+      return n;
+    });
   };
 
   const handleClear = () => {
-    setSchools([{ name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }]);
+    setSchools([{ id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }]);
     setStats({ scraped: 0, emails: 0, phones: 0, matched: 0 });
     setSchoolLogs({});
     setStatus('');
     setProgress(0);
     setDone(false);
     setSchoolCount(1);
-    localStorage.removeItem('rushly_schools');
   };
 
   const stopPolling = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
   };
 
-  const finishScrape = () => {
+  const finishScrape = useCallback(async (completedSchools) => {
     stopPolling();
+    // Mark completed schools as done in Supabase
+    if (completedSchools && completedSchools.length > 0) {
+      const ids = completedSchools.map(s => s.id).filter(Boolean);
+      if (ids.length > 0) {
+        await supabase.from('schools').update({ status: 'done' }).in('id', ids);
+        // Refresh available schools list
+        const { data } = await supabase
+          .from('schools')
+          .select('id, name, campuslabs_url, status')
+          .in('status', ['pending', 'in_progress'])
+          .not('campuslabs_url', 'is', null)
+          .neq('campuslabs_url', '')
+          .order('name', { ascending: true });
+        setAvailableSchools(data || []);
+      }
+    }
     setRunning(false);
     setDone(true);
     setProgress(100);
@@ -129,25 +149,17 @@ export default function Scraper({ session }) {
       setStatus('');
       setProgress(0);
       setSchoolCount(1);
-      setSchools([{ name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }]);
-      localStorage.removeItem('rushly_schools');
+      setSchools([{ id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' }]);
     }, 5000);
-  };
+  }, []);
 
-  const startPolling = (sessionId) => {
+  const startPolling = useCallback((sessionId, activeSchools) => {
     stopPolling();
     lastActivityRef.current = Date.now();
     pollRef.current = setInterval(async () => {
-      if (Date.now() - lastActivityRef.current > 90000) {
-        finishScrape();
-        return;
-      }
+      if (Date.now() - lastActivityRef.current > 90000) { finishScrape(activeSchools); return; }
       try {
-        const { data } = await supabase
-          .from('scrape_progress')
-          .select('*')
-          .eq('session_id', sessionId);
-
+        const { data } = await supabase.from('scrape_progress').select('*').eq('session_id', sessionId);
         if (!data || data.length === 0) return;
 
         let totalScraped = 0, totalEmails = 0, totalPhones = 0, totalMatched = 0;
@@ -155,59 +167,35 @@ export default function Scraper({ session }) {
         let currentStatus = '';
         let currentPct = 0;
 
-        // Get latest row per school (highest id)
         const latest = {};
         for (const row of data) {
-          if (!latest[row.school_name] || row.id > latest[row.school_name].id) {
-            latest[row.school_name] = row;
-          }
+          if (!latest[row.school_name] || row.id > latest[row.school_name].id) latest[row.school_name] = row;
         }
 
         for (const row of Object.values(latest)) {
-          if (row.school_name === '__status__') {
-            currentStatus = row.status || '';
-            currentPct = row.pct || 0;
-            continue;
-          }
+          if (row.school_name === '__status__') { currentStatus = row.status || ''; currentPct = row.pct || 0; continue; }
           totalScraped += row.scraped || 0;
           totalEmails  += row.emails  || 0;
           totalPhones  += row.phones  || 0;
           totalMatched += row.matched || 0;
-          logs[row.school_name] = {
-            orgs:    row.scraped,
-            total:   row.total_orgs,
-            emails:  row.emails,
-            phones:  row.phones,
-            matched: row.matched,
-            time:    row.time_taken || '',
-            done:    row.done
-          };
-          if (!currentStatus && row.status && !row.done) {
-            currentStatus = row.status;
-            currentPct = row.pct || 0;
-          }
+          logs[row.school_name] = { orgs: row.scraped, total: row.total_orgs, emails: row.emails, phones: row.phones, matched: row.matched, time: row.time_taken || '', done: row.done };
+          if (!currentStatus && row.status && !row.done) { currentStatus = row.status; currentPct = row.pct || 0; }
         }
 
         if (currentStatus) setStatus(currentStatus);
         if (currentPct) setProgress(currentPct);
 
-        // Only update stats upward — never flash to 0
         if (totalScraped > 0) {
           setStats(prev => ({
-            scraped:  Math.max(prev.scraped,  totalScraped),
-            emails:   Math.max(prev.emails,   totalEmails),
-            phones:   Math.max(prev.phones,   totalPhones),
-            matched:  Math.max(prev.matched,  totalMatched),
+            scraped: Math.max(prev.scraped, totalScraped), emails: Math.max(prev.emails, totalEmails),
+            phones:  Math.max(prev.phones,  totalPhones),  matched: Math.max(prev.matched, totalMatched),
           }));
         }
 
-        // Flicker fix — never remove a school from logs
         setSchoolLogs(prev => {
           const merged = { ...prev };
           for (const [name, entry] of Object.entries(logs)) {
-            if (!merged[name] || entry.done || (entry.orgs || 0) >= (merged[name].orgs || 0)) {
-              merged[name] = entry;
-            }
+            if (!merged[name] || entry.done || (entry.orgs || 0) >= (merged[name].orgs || 0)) merged[name] = entry;
           }
           return merged;
         });
@@ -217,22 +205,24 @@ export default function Scraper({ session }) {
         const schoolLatest = Object.values(latest).filter(r => r.school_name !== '__status__');
         const expectedSchools = activeSchoolsCountRef.current || 1;
         const allDone = schoolLatest.length >= expectedSchools && schoolLatest.every(r => r.done);
-        if (allDone) finishScrape();
+        if (allDone) finishScrape(activeSchools);
       } catch(e) {}
     }, 1000);
-  };
+  }, [finishScrape]);
 
   const handleStart = async () => {
     const activeSchools = schools.slice(0, schoolCount).filter(s => s.name && s.url);
-    if (activeSchools.length === 0) { alert('Please fill in at least one school.'); return; }
-    if (activeSchools.length < schoolCount) { alert('Please fill in all school fields.'); return; }
+    if (activeSchools.length === 0) { alert('Please select at least one school.'); return; }
+    if (activeSchools.length < schoolCount) { alert('Please select all school slots.'); return; }
 
     if (!window.chrome || !window.chrome.runtime) {
       setStatus('Extension not detected. Please install the Rushly Scraper extension.');
       return;
     }
 
-    localStorage.setItem('rushly_schools', JSON.stringify(schools));
+    // Mark selected schools as in_progress
+    const ids = activeSchools.map(s => s.id).filter(Boolean);
+    if (ids.length > 0) await supabase.from('schools').update({ status: 'in_progress' }).in('id', ids);
 
     const sessionId = Date.now().toString();
     sessionIdRef.current = sessionId;
@@ -245,7 +235,7 @@ export default function Scraper({ session }) {
     setStats({ scraped: 0, emails: 0, phones: 0, matched: 0 });
     setSchoolLogs({});
 
-    startPolling(sessionId);
+    startPolling(sessionId, activeSchools);
 
     const maxTimeout = setTimeout(() => {
       stopPolling();
@@ -257,51 +247,39 @@ export default function Scraper({ session }) {
 
     try {
       chrome.runtime.sendMessage(EXTENSION_ID, {
-        action: 'startScrape',
-        sessionId,
+        action: 'startScrape', sessionId,
         schools: activeSchools.map(s => ({ schoolName: s.name, campusUrl: s.url })),
-        supabaseUrl: SUPABASE_URL,
-        supabaseKey: SUPABASE_KEY
+        supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_KEY
       }, (response) => {
         if (chrome.runtime.lastError) {
-          stopPolling();
-          clearTimeout(maxTimeout);
+          stopPolling(); clearTimeout(maxTimeout);
           setStatus('Could not reach extension: ' + chrome.runtime.lastError.message);
           setRunning(false);
         }
       });
     } catch(e) {
-      stopPolling();
-      clearTimeout(maxTimeout);
+      stopPolling(); clearTimeout(maxTimeout);
       setStatus('Could not reach extension: ' + e.message);
       setRunning(false);
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
+  const handleLogout = async () => { await supabase.auth.signOut(); };
+
+  // Get already-selected school IDs to avoid duplicates in dropdowns
+  const selectedIds = schools.slice(0, schoolCount).map(s => s.id).filter(Boolean);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
 
       {/* Sidebar */}
-      <div style={{
-        width: '200px', minHeight: '100vh', background: '#2d3561',
-        display: 'flex', flexDirection: 'column', flexShrink: 0,
-        position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10
-      }}>
+      <div style={{ width: '200px', minHeight: '100vh', background: '#2d3561', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
         <div style={{ padding: '20px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{
-              width: '32px', height: '32px', background: '#00c896',
-              borderRadius: '8px', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff'
-            }}>R</div>
+            <div style={{ width: '32px', height: '32px', background: '#00c896', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff' }}>R</div>
             <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.2px' }}>Rushly</span>
           </div>
         </div>
-
         <div style={{ padding: '12px 8px', flex: 1, overflowY: 'auto' }}>
           {NAV_SECTIONS.map(section => (
             <div key={section.label} style={{ marginBottom: '4px' }}>
@@ -316,36 +294,26 @@ export default function Scraper({ session }) {
             </div>
           ))}
         </div>
-
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {session?.user?.email || ''}
-          </div>
-          <button onClick={handleLogout} style={{
-            background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '6px',
-            padding: '6px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.5)',
-            cursor: 'pointer', width: '100%', textAlign: 'left'
-          }}>Sign out</button>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email || ''}</div>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
         </div>
       </div>
 
-      {/* Main content — two column layout */}
+      {/* Main content */}
       <div style={{ marginLeft: '200px', flex: 1, display: 'flex', minHeight: '100vh' }}>
 
-        {/* LEFT COLUMN — inputs */}
+        {/* LEFT COLUMN */}
         <div style={{ width: '400px', flexShrink: 0, padding: '28px 24px', borderRight: '1px solid #e8eaf0', background: '#f5f6fa', overflowY: 'auto' }}>
 
-          {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <div>
               <div style={{ fontSize: '17px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>CampusLabs Scraper</div>
-              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Scrape org contact info from CampusLabs</div>
+              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>
+                {loadingSchools ? 'Loading schools...' : `${availableSchools.length} schools pending`}
+              </div>
             </div>
-            <button onClick={handleClear} style={{
-              background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px',
-              padding: '5px 12px', fontSize: '11px', color: '#e05c5c',
-              cursor: 'pointer', fontWeight: '500'
-            }}>✕ Clear</button>
+            <button onClick={handleClear} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '5px 12px', fontSize: '11px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>✕ Clear</button>
           </div>
 
           {/* School count */}
@@ -359,34 +327,42 @@ export default function Scraper({ session }) {
                   borderRadius: '7px',
                   background: schoolCount === n ? '#00c896' : '#fff',
                   color: schoolCount === n ? '#fff' : '#9094a8',
-                  fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                  transition: 'all 0.15s'
+                  fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.15s'
                 }}>{n}</button>
               ))}
             </div>
           </div>
 
-          {/* School fields */}
+          {/* School dropdowns */}
           {Array.from({ length: schoolCount }, (_, i) => (
             <div key={i} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', padding: '14px', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
-                <div style={{
-                  width: '20px', height: '20px', background: '#00c896', borderRadius: '5px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '10px', fontWeight: '700', color: '#fff'
-                }}>{i + 1}</div>
+                <div style={{ width: '20px', height: '20px', background: '#00c896', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: '#fff' }}>{i + 1}</div>
                 <span style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>School {i + 1}</span>
               </div>
-              <div style={{ marginBottom: '8px' }}>
-                <div style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>School name</div>
-                <input value={schools[i].name} onChange={e => updateSchool(i, 'name', e.target.value)} placeholder="e.g. Lehigh University"
-                  style={{ width: '100%', height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: '#1a1d2e', outline: 'none', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>CampusLabs URL</div>
-                <input value={schools[i].url} onChange={e => updateSchool(i, 'url', e.target.value)} placeholder="https://lehigh.campuslabs.com/engage"
-                  style={{ width: '100%', height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: '#1a1d2e', outline: 'none', boxSizing: 'border-box' }} />
-              </div>
+              <select
+                value={schools[i].id || ''}
+                onChange={e => selectSchool(i, e.target.value)}
+                disabled={loadingSchools || running}
+                style={{ width: '100%', height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: schools[i].id ? '#1a1d2e' : '#9094a8', outline: 'none', cursor: 'pointer', boxSizing: 'border-box' }}
+              >
+                <option value="">
+                  {loadingSchools ? 'Loading...' : '— Select a school —'}
+                </option>
+                {availableSchools
+                  .filter(s => s.id === schools[i].id || !selectedIds.includes(s.id))
+                  .map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}{s.status === 'in_progress' ? ' ⏳' : ''}
+                    </option>
+                  ))
+                }
+              </select>
+              {schools[i].url && (
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#9094a8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  🔗 {schools[i].url}
+                </div>
+              )}
             </div>
           ))}
 
@@ -404,12 +380,9 @@ export default function Scraper({ session }) {
           )}
 
           {done && (
-            <div style={{
-              width: '100%', height: '42px', background: '#e8faf5', color: '#00c896',
-              border: '1px solid #b3eed9', borderRadius: '8px', fontSize: '13px',
-              fontWeight: '600', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', marginTop: '4px', marginBottom: '14px'
-            }}>✓ Done — scrape another school</div>
+            <div style={{ width: '100%', height: '42px', background: '#e8faf5', color: '#00c896', border: '1px solid #b3eed9', borderRadius: '8px', fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px', marginBottom: '14px' }}>
+              ✓ Done — scrape another school
+            </div>
           )}
 
           {/* Stats */}
@@ -425,10 +398,9 @@ export default function Scraper({ session }) {
           )}
         </div>
 
-        {/* RIGHT COLUMN — live results */}
+        {/* RIGHT COLUMN */}
         <div style={{ flex: 1, padding: '28px 32px', overflowY: 'auto' }}>
 
-          {/* Animation + status + progress */}
           {running && (
             <div style={{ marginBottom: '24px' }}>
               <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', marginBottom: '10px' }}>
@@ -441,28 +413,19 @@ export default function Scraper({ session }) {
             </div>
           )}
 
-          {/* School log cards */}
-          {Object.entries(schoolLogs).map(([name, d], i) => (
+          {Object.entries(schoolLogs).map(([name, d]) => (
             <div key={name}>
               <div style={{ padding: '16px 0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
-                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e' }}>
-                      {name}{d.total ? ` — ${d.total} orgs` : ''}
-                    </span>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e' }}>{name}{d.total ? ` — ${d.total} orgs` : ''}</span>
                     {!d.done && d.orgs > 0 && d.total > 0 && (
-                      <span style={{ fontSize: '11px', color: '#9094a8', marginLeft: '8px' }}>
-                        {d.orgs}/{d.total} scraped
-                      </span>
+                      <span style={{ fontSize: '11px', color: '#9094a8', marginLeft: '8px' }}>{d.orgs}/{d.total} scraped</span>
                     )}
                   </div>
                   {d.done
-                    ? <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>
-                        ✓ {d.time}
-                      </span>
-                    : <span style={{ fontSize: '11px', color: '#f59e0b', background: '#fffbeb', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>
-                        ⏳ running...
-                      </span>
+                    ? <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>✓ {d.time}</span>
+                    : <span style={{ fontSize: '11px', color: '#f59e0b', background: '#fffbeb', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>⏳ running...</span>
                   }
                 </div>
                 <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#9094a8' }}>
@@ -472,12 +435,10 @@ export default function Scraper({ session }) {
                   <span><b style={{ color: '#1a1d2e' }}>{d.matched}</b> matched</span>
                 </div>
               </div>
-              {/* Separator */}
               <div style={{ height: '1px', background: '#e8eaf0' }} />
             </div>
           ))}
 
-          {/* Empty state */}
           {Object.keys(schoolLogs).length === 0 && !running && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '300px', color: '#c5c7d4' }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#e8eaf0" strokeWidth="1.5" style={{ marginBottom: '12px' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
