@@ -2,21 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQE83G8ZyIWo6LAE3jG8RhD1XLCW-sz-7imqzUv62eYkkgJNXSAuLDIjnTeXchUCqr/exec';
-
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-  ), path: '/dashboard' },
-  { label: 'Scraper', icon: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-  ), path: '/scraper' },
-  { label: 'Leads', icon: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-  ), path: '/leads' },
-  { label: 'Review', icon: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-  ), path: '/review' },
+const NAV_SECTIONS = [
+  { label: 'Menu', items: [
+    { label: 'Dashboard', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, path: '/dashboard' },
+  ]},
+  { label: 'Tools', items: [
+    { label: 'Scraper', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>, path: '/scraper' },
+  ]},
+  { label: 'Database', items: [
+    { label: 'Leads', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, path: '/leads' },
+  ]},
+  { label: 'Approval', items: [
+    { label: 'Review', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, path: '/review' },
+  ]},
 ];
 
 export default function Review({ session }) {
@@ -80,12 +78,6 @@ export default function Review({ session }) {
         await supabase.from('leads').update({ company: editCompany }).eq('company', oldCompany);
         await supabase.from('companies').update({ companies: editCompany, organization: editOrg }).eq('companies', oldCompany);
       }
-      // Add to Google Sheets masterlist
-      fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'addToMasterlist', orgName: editOrg })
-      }).catch(() => {});
       setSaving(prev => ({ ...prev, [row.id]: 'saved' }));
       // Remove from list after short delay
       setTimeout(() => {
@@ -102,12 +94,6 @@ export default function Review({ session }) {
     setSaving(prev => ({ ...prev, [row.id]: 'atm' }));
     try {
       await supabase.from('review').update({ atm: true }).eq('id', row.id);
-      // Add to Google Sheets masterlist
-      fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'addToMasterlist', orgName: row.organization })
-      }).catch(() => {});
       // Remove from list after short delay
       setTimeout(() => {
         setRows(prev => prev.filter(r => r.id !== row.id));
