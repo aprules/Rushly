@@ -192,10 +192,10 @@ export default function Schools({ session }) {
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
 
       {/* Sidebar */}
-      <div style={{ width: '220px', minHeight: '100vh', background: '#1e2a4a', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
-        <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+      <div style={{ width: '180px', minHeight: '100vh', background: '#405189', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
+        <div style={{ padding: '16px 16px 14px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', display: 'flex', justifyContent: 'center' }} onClick={() => navigate('/dashboard')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src={rushlyLogo} alt="Rushly" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+            <img src={rushlyLogo} alt="Rushly" style={{ height: '28px', width: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
           </div>
         </div>
         <div style={{ padding: '10px 12px', flex: 1, overflowY: 'auto' }}>
@@ -227,7 +227,7 @@ export default function Schools({ session }) {
       </div>
 
       {/* Main */}
-      <div style={{ marginLeft: '220px', flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: '180px', flex: 1, padding: '32px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
