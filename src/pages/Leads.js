@@ -84,7 +84,7 @@ export default function Leads({ session }) {
 
   const SortIcon = ({ col }) => {
     if (sortCol !== col) return <span style={{ color: '#ccc', marginLeft: '4px' }}>↕</span>;
-    return <span style={{ color: '#00c896', marginLeft: '180px' }}>{sortAsc ? '↑' : '↓'}</span>;
+    return <span style={{ color: '#00c896', marginLeft: '230px' }}>{sortAsc ? '↑' : '↓'}</span>;
   };
 
   const totalPages = Math.ceil(total / pageSize);
@@ -97,14 +97,14 @@ export default function Leads({ session }) {
 
 
       {/* Main */}
-      <div style={{ marginLeft: '180px', flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: '230px', flex: 1, padding: '32px', minWidth: 0 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
               Leads
-              {total > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '180px' }}>({total.toLocaleString()})</span>}
+              {total > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '230px' }}>({total.toLocaleString()})</span>}
             </div>
             <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>All scraped contacts from CampusLabs</div>
           </div>
