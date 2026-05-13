@@ -27,7 +27,7 @@ const PAGE_TITLES = {
   '/review': 'Review',
 };
 
-export const SIDEBAR_WIDTH = '200px';
+export const SIDEBAR_WIDTH = '155px';
 
 export default function Sidebar({ session }) {
   const navigate = useNavigate();
@@ -49,9 +49,9 @@ export default function Sidebar({ session }) {
 
   return (
     <div style={{
-      width: SIDEBAR_WIDTH, minHeight: '100vh', background: '#405189',
+      width: SIDEBAR_WIDTH, height: '100vh', background: '#405189',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
-      position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10,
+      position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10, overflowY: 'hidden',
       fontFamily: "'DM Sans', Segoe UI, sans-serif"
     }}>
       {/* Logo */}
