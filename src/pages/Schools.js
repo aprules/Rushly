@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import rushlyLogo from '../assets/rushly.png';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import Sidebar, { SIDEBAR_WIDTH } from '../components/Sidebar';
 
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
