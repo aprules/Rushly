@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 150];
 
 export default function Leads({ session }) {
-  const navigate =();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
