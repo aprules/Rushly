@@ -7,11 +7,11 @@ export default async function handler(req, res) {
   const DECOGRO_KEY = 'ak_live_14d8946a76e2c99814586ab48a64c555.sk_63c8b9956ddd90770208b352d9fb01b9ff463b4fdd4fd6548bb5663e2d951113';
   const { page = 1, search = '' } = req.query;
 
-  const params = new URLSearchParams({ table_id: 'schools', limit: 50, page });
+  const params = new URLSearchParams({ limit: 50, page });
   if (search) params.append('search', search);
 
   try {
-    const response = await fetch(`https://app.decogro.com/api/boards/data?${params}`, {
+    const response = await fetch(`https://app.decogro.com/board/schools/get_data?${params}`, {
       headers: {
         'Authorization': `Bearer ${DECOGRO_KEY}`,
         'Content-Type': 'application/json'
