@@ -8,29 +8,25 @@ export default async function handler(req, res) {
   if (!schoolName) return res.status(400).json({ url: null });
 
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
+    // Search Google for the school's CampusLabs URL
+    const query = encodeURIComponent(`${schoolName} campuslabs.com engage`);
+    const searchRes = await fetch(`https://www.google.com/search?q=${query}`, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'HTTP-Referer': 'https://rushly-ten.vercel.app',
-        'X-Title': 'Rushly'
-      },
-      body: JSON.stringify({
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
-        messages: [{
-          role: 'user',
-          content: `What is the CampusLabs Engage URL for ${schoolName}? It looks like https://schoolname.campuslabs.com/engage or https://schoolname.campuslabs.com/engage/organizations. Reply with ONLY the URL or "none".`
-        }],
-        max_tokens: 100
-      })
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
     });
+    const html = await searchRes.text();
 
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content?.trim() || 'none';
-    if (text === 'none' || !text.includes('campuslabs.com')) return res.status(200).json({ url: null });
-    return res.status(200).json({ url: text });
+    // Extract campuslabs.com URLs from the search results
+    const matches = html.match(/https?:\/\/[a-z0-9\-]+\.campuslabs\.com\/engage[^\s"&<]*/gi);
+    if (!matches || matches.length === 0) return res.status(200).json({ url: null });
+
+    // Clean and return the first match
+    const url = matches[0].replace(/\\u003d/g, '=').split('&')[0];
+    if (!url.includes('campuslabs.com')) return res.status(200).json({ url: null });
+
+    return res.status(200).json({ url });
   } catch (e) {
-    return res.status(200).json({ url: null });
+    return res.status(200).json({ url: null, error: e.message });
   }
 }
