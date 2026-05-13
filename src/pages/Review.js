@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 export default function Review({ session }) {
-  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
