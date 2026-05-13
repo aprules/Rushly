@@ -302,7 +302,7 @@ export default function Scraper({ session }) {
       </div>
 
       {/* Main content */}
-      <div style={{ marginLeft: 175px, flex: 1, display: 'flex', minHeight: '100vh' }}>
+      <div style={{ marginLeft: '175px', flex: 1, display: 'flex', minHeight: '100vh' }}>
 
         {/* LEFT COLUMN */}
         <div style={{ width: '400px', flexShrink: 0, padding: '28px 24px', borderRight: '1px solid #e8eaf0', background: '#f5f6fa', overflowY: 'auto' }}>

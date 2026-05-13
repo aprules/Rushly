@@ -144,7 +144,7 @@ export default function Dashboard({ session }) {
       </div>
 
       {/* Main */}
-      <div style={{ marginLeft: 175px, flex: 1, padding: '32px' }}>
+      <div style={{ marginLeft: '175px', flex: 1, padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>Dashboard</div>
           <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Overview of all Rushly tools and modules</div>

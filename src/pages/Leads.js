@@ -97,7 +97,7 @@ export default function Leads({ session }) {
 
 
       {/* Main */}
-      <div style={{ marginLeft: 175px, flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: '175px', flex: 1, padding: '32px', minWidth: 0 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
