@@ -153,13 +153,25 @@ export default function Scraper({ session }) {
             time:    row.time_taken || '',
             done:    row.done
           };
-          if (row.status) setStatus(row.status);
-          if (row.pct)    setProgress(row.pct);
+          if (row.status && !row.done) {
+            setStatus(row.status);
+            if (row.pct) setProgress(row.pct);
+          }
         }
 
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
-        setSchoolLogs(logs);
-        // Debug
+        // Never remove a school from the log — only add or update
+        setSchoolLogs(prev => {
+          const merged = { ...prev };
+          for (const [name, entry] of Object.entries(logs)) {
+            const existing = merged[name];
+            // Update if: no existing entry, OR new entry is done, OR new entry has more orgs scraped
+            if (!existing || entry.done || (entry.orgs || 0) > (existing.orgs || 0)) {
+              merged[name] = entry;
+            }
+          }
+          return merged;
+        });
         lastActivityRef.current = Date.now();
 
         // Use ref for school count so it's always current
