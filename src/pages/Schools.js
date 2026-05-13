@@ -2,9 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
-const DECOGRO_KEY = 'ak_live_14d8946a76e2c99814586ab48a64c555.sk_63c8b9956ddd90770208b352d9fb01b9ff463b4fdd4fd6548bb5663e2d951113';
-const TABLE_ID = 'schools';
-
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
     { label: 'Dashboard', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, path: '/dashboard' },
@@ -45,25 +42,15 @@ export default function Schools({ session }) {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({
-        table_id: TABLE_ID,
-        limit: 50,
-        page,
-        ...(search && { search }),
-      });
-      const res = await fetch(`https://app.decogro.com/api/boards/data?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${DECOGRO_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const params = new URLSearchParams({ page, ...(search && { search }) });
+      const res = await fetch(`/api/decogro-schools?${params}`);
       const json = await res.json();
       if (json.success && json.data) {
         setSchools(json.data.data || []);
         setTotalPages(json.data.pagination?.totalPages || 1);
         setTotal(json.data.pagination?.total || 0);
       } else {
-        setError('Could not load schools from DecoGro.');
+        setError('Could not load schools.');
       }
     } catch(e) {
       setError('Failed to load schools. Please try again.');
@@ -75,19 +62,12 @@ export default function Schools({ session }) {
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
   const filtered = filterStatus ? schools.filter(s => getStatus(s) === filterStatus) : schools;
-
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const StatusBadge = ({ status }) => {
-    if (status === 'done') return (
-      <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>✓ Done</span>
-    );
-    if (status === 'inprogress') return (
-      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>
-    );
-    return (
-      <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Not started</span>
-    );
+    if (status === 'done') return <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px' }}>✓ Done</span>;
+    if (status === 'inprogress') return <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>;
+    return <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Not started</span>;
   };
 
   return (
@@ -149,9 +129,7 @@ export default function Schools({ session }) {
           </select>
           {(search || filterStatus) && (
             <button onClick={() => { setSearch(''); setFilterStatus(''); }}
-              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>
-              ✕ Clear
-            </button>
+              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>✕ Clear</button>
           )}
         </div>
 
@@ -209,7 +187,6 @@ export default function Schools({ session }) {
               </tbody>
             </table>
           </div>
-
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages}</div>
