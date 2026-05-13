@@ -317,31 +317,32 @@ export default function Scraper({ session }) {
         </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ marginLeft: '200px', flex: 1, padding: '32px' }}>
+      {/* Main content - two column layout */}
+      <div style={{ marginLeft: '200px', flex: 1, display: 'flex', minHeight: '100vh' }}>
 
-        {/* Page header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <div>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>CampusLabs Scraper</div>
-            <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Scrape org contact info from CampusLabs directories</div>
+        {/* LEFT COLUMN — inputs */}
+        <div style={{ width: '400px', flexShrink: 0, padding: '28px 24px', borderRight: '1px solid #e8eaf0', background: '#f5f6fa' }}>
+
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <div>
+              <div style={{ fontSize: '17px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>CampusLabs Scraper</div>
+              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Scrape org contact info from CampusLabs directories</div>
+            </div>
+            <button onClick={handleClear} style={{
+              background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px',
+              padding: '5px 12px', fontSize: '11px', color: '#e05c5c',
+              cursor: 'pointer', fontWeight: '500'
+            }}>✕ Clear</button>
           </div>
-          <button onClick={handleClear} style={{
-            background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px',
-            padding: '7px 14px', fontSize: '12px', color: '#e05c5c',
-            cursor: 'pointer', fontWeight: '500'
-          }}>✕ Clear</button>
-        </div>
-
-        <div style={{ maxWidth: '560px' }}>
 
           {/* School count */}
-          <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '11px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>How many schools?</div>
+          <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+            <div style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>How many schools?</div>
             <div style={{ display: 'flex', gap: '6px' }}>
               {[1, 2, 3, 4, 5].map(n => (
                 <button key={n} onClick={() => setSchoolCount(n)} style={{
-                  flex: 1, height: '36px', border: '1px solid',
+                  flex: 1, height: '34px', border: '1px solid',
                   borderColor: schoolCount === n ? '#00c896' : '#e8eaf0',
                   borderRadius: '7px',
                   background: schoolCount === n ? '#00c896' : '#fff',
@@ -355,138 +356,126 @@ export default function Scraper({ session }) {
 
           {/* School fields */}
           {Array.from({ length: schoolCount }, (_, i) => (
-            <div key={i} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '16px', marginBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px' }}>
+            <div key={i} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', padding: '14px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
                 <div style={{
-                  width: '22px', height: '22px', background: '#00c896', borderRadius: '6px',
+                  width: '20px', height: '20px', background: '#00c896', borderRadius: '5px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '11px', fontWeight: '700', color: '#fff'
+                  fontSize: '10px', fontWeight: '700', color: '#fff'
                 }}>{i + 1}</div>
-                <span style={{ fontSize: '11px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>School {i + 1}</span>
+                <span style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.4px' }}>School {i + 1}</span>
               </div>
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{ fontSize: '11px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '5px' }}>School name</div>
-                <input
-                  value={schools[i].name}
-                  onChange={e => updateSchool(i, 'name', e.target.value)}
-                  placeholder="e.g. Lehigh University"
-                  style={{
-                    width: '100%', height: '36px', background: '#f5f6fa',
-                    border: '1px solid #e8eaf0', borderRadius: '7px',
-                    padding: '0 12px', fontSize: '13px', color: '#1a1d2e',
-                    outline: 'none', boxSizing: 'border-box'
-                  }}
-                />
+              <div style={{ marginBottom: '8px' }}>
+                <div style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>School name</div>
+                <input value={schools[i].name} onChange={e => updateSchool(i, 'name', e.target.value)} placeholder="e.g. Lehigh University"
+                  style={{ width: '100%', height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: '#1a1d2e', outline: 'none', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize: '11px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '5px' }}>CampusLabs URL</div>
-                <input
-                  value={schools[i].url}
-                  onChange={e => updateSchool(i, 'url', e.target.value)}
-                  placeholder="https://lehigh.campuslabs.com/engage"
-                  style={{
-                    width: '100%', height: '36px', background: '#f5f6fa',
-                    border: '1px solid #e8eaf0', borderRadius: '7px',
-                    padding: '0 12px', fontSize: '13px', color: '#1a1d2e',
-                    outline: 'none', boxSizing: 'border-box'
-                  }}
-                />
+                <div style={{ fontSize: '10px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.3px', marginBottom: '4px' }}>CampusLabs URL</div>
+                <input value={schools[i].url} onChange={e => updateSchool(i, 'url', e.target.value)} placeholder="https://lehigh.campuslabs.com/engage"
+                  style={{ width: '100%', height: '34px', background: '#f5f6fa', border: '1px solid #e8eaf0', borderRadius: '6px', padding: '0 10px', fontSize: '12px', color: '#1a1d2e', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             </div>
           ))}
 
-          {/* Action button */}
+          {/* Start button */}
           {!running && !done && (
             <button onClick={handleStart} style={{
-              width: '100%', height: '44px', background: '#00c896', color: '#fff',
-              border: 'none', borderRadius: '9px', fontSize: '14px', fontWeight: '600',
-              cursor: 'pointer', marginBottom: '16px', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', gap: '8px',
+              width: '100%', height: '42px', background: '#00c896', color: '#fff',
+              border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600',
+              cursor: 'pointer', marginTop: '4px', marginBottom: '14px',
               boxShadow: '0 4px 14px rgba(0,200,150,0.3)', transition: 'opacity 0.15s'
             }}
               onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-            >
-              ▶ Start scraping
-            </button>
-          )}
-
-          {running && (
-            <div style={{
-              width: '100%', background: '#fff', border: '1px solid #e8eaf0',
-              borderRadius: '9px', marginBottom: '16px'
-            }}>
-              <DecogroAnimation running={running} />
-            </div>
+            >▶ Start scraping</button>
           )}
 
           {done && (
             <div style={{
-              width: '100%', height: '44px', background: '#e8faf5', color: '#00c896',
-              border: '1px solid #b3eed9', borderRadius: '9px', fontSize: '13px',
+              width: '100%', height: '42px', background: '#e8faf5', color: '#00c896',
+              border: '1px solid #b3eed9', borderRadius: '8px', fontSize: '13px',
               fontWeight: '600', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', marginBottom: '16px'
-            }}>
-              ✓ Done — scrape another school
-            </div>
-          )}
-
-          {/* Progress bar */}
-          {(running || done) && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ height: '4px', background: '#e8eaf0', borderRadius: '2px', overflow: 'hidden', marginBottom: '7px' }}>
-                <div style={{ height: '100%', background: '#00c896', width: progress + '%', transition: 'width 0.5s ease', borderRadius: '2px' }} />
-              </div>
-              <div style={{ fontSize: '11px', color: '#9094a8' }}>{status}</div>
-            </div>
+              justifyContent: 'center', marginTop: '4px', marginBottom: '14px'
+            }}>✓ Done — scrape another school</div>
           )}
 
           {/* Stats */}
           {(running || stats.scraped > 0) && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '10px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '8px' }}>
               {[['SCRAPED', stats.scraped], ['EMAILS', stats.emails], ['PHONES', stats.phones], ['MATCHED', stats.matched]].map(([l, v]) => (
-                <div key={l} style={{
-                  background: '#fff', border: '1px solid #e8eaf0',
-                  borderRadius: '10px', padding: '12px 8px', textAlign: 'center'
-                }}>
-                  <div style={{ fontSize: '22px', fontWeight: '700', color: '#00c896', lineHeight: 1 }}>{v}</div>
-                  <div style={{ fontSize: '9px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '5px' }}>{l}</div>
+                <div key={l} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '8px', padding: '10px 6px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: '700', color: '#00c896', lineHeight: 1 }}>{v}</div>
+                  <div style={{ fontSize: '9px', color: '#9094a8', textTransform: 'uppercase', letterSpacing: '0.4px', marginTop: '4px' }}>{l}</div>
                 </div>
               ))}
             </div>
           )}
+        </div>
 
-          {/* School logs */}
-          {Object.keys(schoolLogs).length > 0 && (
-            <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
-              {Object.entries(schoolLogs).map(([name, d], i, arr) => (
-                <div key={name} style={{
-                  padding: '12px 16px',
-                  borderBottom: i < arr.length - 1 ? '1px solid #e8eaf0' : 'none'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#1a1d2e' }}>
+        {/* RIGHT COLUMN — live results */}
+        <div style={{ flex: 1, padding: '28px 32px', overflowY: 'auto' }}>
+
+          {/* Animation + status + counter */}
+          {running && (
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', marginBottom: '10px' }}>
+                <DecogroAnimation running={running} />
+              </div>
+              {/* Progress bar */}
+              <div style={{ height: '3px', background: '#e8eaf0', borderRadius: '2px', overflow: 'hidden', marginBottom: '6px' }}>
+                <div style={{ height: '100%', background: '#00c896', width: progress + '%', transition: 'width 0.5s ease', borderRadius: '2px' }} />
+              </div>
+              {/* Status + counter */}
+              <div style={{ fontSize: '11px', color: '#9094a8' }}>{status}</div>
+            </div>
+          )}
+
+          {/* School logs — each card separated by a line */}
+          {Object.entries(schoolLogs).map(([name, d], i) => (
+            <div key={name}>
+              {/* School card */}
+              <div style={{ padding: '16px 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <span style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e' }}>
                       {name}{d.total ? ` — ${d.total} orgs` : ''}
                     </span>
-                    {d.done
-                      ? <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '2px 8px', borderRadius: '20px' }}>
-                          ✓ {d.time}
-                        </span>
-                      : <span style={{ fontSize: '11px', color: '#9094a8' }}>⏳ running...</span>
-                    }
+                    {!d.done && d.orgs > 0 && d.total > 0 && (
+                      <span style={{ fontSize: '11px', color: '#9094a8', marginLeft: '8px' }}>
+                        {d.orgs}/{d.total} scraped
+                      </span>
+                    )}
                   </div>
-                  <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: '#9094a8' }}>
-                    <span><b style={{ color: '#1a1d2e' }}>{d.orgs}</b> scraped</span>
-                    <span><b style={{ color: '#1a1d2e' }}>{d.emails}</b> emails</span>
-                    <span><b style={{ color: '#1a1d2e' }}>{d.phones}</b> phones</span>
-                    <span><b style={{ color: '#1a1d2e' }}>{d.matched}</b> matched</span>
-                  </div>
+                  {d.done
+                    ? <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>
+                        ✓ {d.time}
+                      </span>
+                    : <span style={{ fontSize: '11px', color: '#f59e0b', background: '#fffbeb', padding: '2px 10px', borderRadius: '20px', flexShrink: 0 }}>
+                        ⏳ running...
+                      </span>
+                  }
                 </div>
-              ))}
+                <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#9094a8' }}>
+                  <span><b style={{ color: '#1a1d2e' }}>{d.orgs}</b> scraped</span>
+                  <span><b style={{ color: '#1a1d2e' }}>{d.emails}</b> emails</span>
+                  <span><b style={{ color: '#1a1d2e' }}>{d.phones}</b> phones</span>
+                  <span><b style={{ color: '#1a1d2e' }}>{d.matched}</b> matched</span>
+                </div>
+              </div>
+              {/* Separator line */}
+              <div style={{ height: '1px', background: '#e8eaf0' }} />
+            </div>
+          ))}
+
+          {/* Empty state */}
+          {Object.keys(schoolLogs).length === 0 && !running && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px', color: '#c5c7d4', fontSize: '13px' }}>
+              Results will appear here when scraping starts
             </div>
           )}
-
         </div>
+
       </div>
     </div>
   );
