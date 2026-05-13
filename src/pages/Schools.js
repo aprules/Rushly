@@ -52,6 +52,7 @@ export default function Schools({ session }) {
   const [finding, setFinding] = useState(false);
   const [findProgress, setFindProgress] = useState({ current: 0, total: 0, found: 0, notFound: 0 });
   const [findResults, setFindResults] = useState([]);
+  const [pageInput, setPageInput] = useState('');
   const stopFindRef = useRef(false);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -105,6 +106,14 @@ export default function Schools({ session }) {
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
+
+  const handlePageJump = (e) => {
+    if (e.key === 'Enter') {
+      const num = parseInt(pageInput);
+      if (!isNaN(num) && num >= 1 && num <= totalPages) setPage(num);
+      setPageInput('');
+    }
+  };
 
   const handleFindUrls = async () => {
     // Fetch the specific batch/page of no-url schools
@@ -382,9 +391,13 @@ export default function Schools({ session }) {
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages} · {total.toLocaleString()} schools</div>
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                   style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page === 1 ? '#c5c7d4' : '#1a1d2e', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>← Prev</button>
+                <input value={pageInput} onChange={e => setPageInput(e.target.value)} onKeyDown={handlePageJump}
+                  placeholder={String(page)}
+                  style={{ width: '48px', height: '30px', border: '1px solid #e8eaf0', borderRadius: '6px', textAlign: 'center', fontSize: '12px', color: '#1a1d2e', outline: 'none' }} />
+                <span style={{ fontSize: '12px', color: '#9094a8' }}>of {totalPages}</span>
                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
                   style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page >= totalPages ? '#c5c7d4' : '#1a1d2e', cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}>Next →</button>
               </div>
