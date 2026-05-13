@@ -115,14 +115,18 @@ export default function Review({ session }) {
             <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.2px' }}>Rushly</span>
           </div>
         </div>
-        <div style={{ padding: '12px 8px', flex: 1 }}>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '8px 8px 6px' }}>Menu</div>
-          {NAV_ITEMS.map(item => (
-            <div key={item.path} onClick={() => navigate(item.path)}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderRadius: '7px', cursor: 'pointer', color: item.path === '/review' ? '#fff' : 'rgba(255,255,255,0.65)', background: item.path === '/review' ? 'rgba(255,255,255,0.1)' : 'transparent', fontSize: '13px', fontWeight: '500', marginBottom: '2px', transition: 'background 0.15s, color 0.15s' }}
-              onMouseEnter={e => { if (item.path !== '/review') { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}}
-              onMouseLeave={e => { if (item.path !== '/review') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}}
-            >{item.icon}{item.label}</div>
+        <div style={{ padding: '12px 8px', flex: 1, overflowY: 'auto' }}>
+          {NAV_SECTIONS.map(section => (
+            <div key={section.label} style={{ marginBottom: '4px' }}>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '8px 8px 4px' }}>{section.label}</div>
+              {section.items.map(item => (
+                <div key={item.path} onClick={() => navigate(item.path)}
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '7px', cursor: 'pointer', color: item.path === '/review' ? '#fff' : 'rgba(255,255,255,0.65)', background: item.path === '/review' ? 'rgba(255,255,255,0.1)' : 'transparent', fontSize: '13px', fontWeight: '500', marginBottom: '2px', transition: 'background 0.15s' }}
+                  onMouseEnter={e => { if (item.path !== '/review') { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}}
+                  onMouseLeave={e => { if (item.path !== '/review') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}}
+                >{item.icon}{item.label}</div>
+              ))}
+            </div>
           ))}
         </div>
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
