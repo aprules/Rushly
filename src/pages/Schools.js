@@ -2,10 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
-const DECOGRO_API = 'https://mcp.decogro.com/api';
-const DECOGRO_KEY = 'ak_live_14d8946a76e2c99814586ab48a64c555.sk_63c8b9956ddd90770208b352d9fb01b9ff463b4fdd4fd6548bb5663e2d951113';
-const TABLE_ID = 'schools';
-
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
     { label: 'Dashboard', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, path: '/dashboard' },
@@ -22,85 +18,86 @@ const NAV_SECTIONS = [
   ]},
 ];
 
+async function fetchSchoolsViaClaude({ page, search, signal }) {
+  const prompt = search
+    ? `Use the DecoGro MCP tool to fetch schools from the "schools" board, page ${page}, limit 50, search term: "${search}". Return ONLY a JSON object: {"schools": [{"record_id": number, "name": string, "campuslabsUrl": string or null, "status": "done"|"inprogress"|"none"}], "total": number, "totalPages": number}. Map "Campus Labs Site" to campuslabsUrl. Map CampusLabs Status: "Done" = "done", "In progress" = "inprogress", empty = "none".`
+    : `Use the DecoGro MCP tool to fetch schools from the "schools" board, page ${page}, limit 50. Return ONLY a JSON object: {"schools": [{"record_id": number, "name": string, "campuslabsUrl": string or null, "status": "done"|"inprogress"|"none"}], "total": number, "totalPages": number}. Map "Campus Labs Site" to campuslabsUrl. Map CampusLabs Status: "Done" = "done", "In progress" = "inprogress", empty = "none".`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    signal,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: 'You are a data assistant. Always respond with pure JSON only — no markdown, no explanation, no backticks.',
+      messages: [{ role: 'user', content: prompt }],
+      mcp_servers: [{
+        type: 'url',
+        url: 'https://mcp.decogro.com/mcp',
+        name: 'decogro'
+      }]
+    })
+  });
+
+  const data = await res.json();
+  const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const clean = text.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
 export default function Schools({ session }) {
   const navigate = useNavigate();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const fetchSchools = useCallback(async () => {
+  const fetchSchools = useCallback(async (signal) => {
     setLoading(true);
+    setError('');
     try {
-      const params = new URLSearchParams({
-        table_id: TABLE_ID,
-        limit: 50,
-        page,
-        ...(search && { search }),
-      });
-
-      const res = await fetch(`${DECOGRO_API}/boards/data?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${DECOGRO_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setSchools(json.data.data || []);
-        setTotalPages(json.data.pagination?.totalPages || 1);
-        setTotal(json.data.pagination?.total || 0);
-      }
-    } catch(e) {}
-    setLoading(false);
+      const result = await fetchSchoolsViaClaude({ page, search, signal });
+      if (signal && signal.aborted) return;
+      setSchools(result.schools || []);
+      setTotalPages(result.totalPages || 1);
+      setTotal(result.total || 0);
+    } catch (e) {
+      if (!signal || !signal.aborted) setError('Failed to load schools. Please try again.');
+    }
+    if (!signal || !signal.aborted) setLoading(false);
   }, [page, search]);
 
-  useEffect(() => { fetchSchools(); }, [fetchSchools]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchSchools(controller.signal);
+    return () => controller.abort();
+  }, [fetchSchools]);
+
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
-  const getStatus = (school) => {
-    const status = school['CampusLabs Status'];
-    if (!status || status.length === 0) return 'none';
-    const val = status[0]?.value || '';
-    if (val === 'Done') return 'done';
-    if (val === 'In progress') return 'inprogress';
-    return 'none';
-  };
-
-  const getCampusLabsUrl = (school) => {
-    return school['Campus Labs Site'] || '';
-  };
-
-  const filtered = filterStatus
-    ? schools.filter(s => getStatus(s) === filterStatus)
-    : schools;
+  const filtered = filterStatus ? schools.filter(s => s.status === filterStatus) : schools;
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const StatusBadge = ({ status }) => {
     if (status === 'done') return (
-      <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-        ✓ Done
-      </span>
+      <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>✓ Done</span>
     );
     if (status === 'inprogress') return (
-      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>
-        ⏳ In Progress
-      </span>
+      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>
     );
     return (
-      <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>
-        — Not started
-      </span>
+      <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Not started</span>
     );
   };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
-      {/* Sidebar */}
       <div style={{ width: '200px', minHeight: '100vh', background: '#2d3561', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
         <div style={{ padding: '20px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -114,7 +111,7 @@ export default function Schools({ session }) {
               <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '8px 8px 4px' }}>{section.label}</div>
               {section.items.map(item => (
                 <div key={item.path} onClick={() => navigate(item.path)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '7px', cursor: 'pointer', color: item.path === '/schools' ? '#fff' : 'rgba(255,255,255,0.65)', background: item.path === '/schools' ? 'rgba(255,255,255,0.1)' : 'transparent', fontSize: '13px', fontWeight: '500', marginBottom: '2px', transition: 'background 0.15s' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '7px', cursor: 'pointer', color: item.path === '/schools' ? '#fff' : 'rgba(255,255,255,0.65)', background: item.path === '/schools' ? 'rgba(255,255,255,0.1)' : 'transparent', fontSize: '13px', fontWeight: '500', marginBottom: '2px' }}
                   onMouseEnter={e => { if (item.path !== '/schools') { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}}
                   onMouseLeave={e => { if (item.path !== '/schools') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}}
                 >{item.icon}{item.label}</div>
@@ -128,7 +125,6 @@ export default function Schools({ session }) {
         </div>
       </div>
 
-      {/* Main */}
       <div style={{ marginLeft: '200px', flex: 1, padding: '32px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
@@ -138,17 +134,12 @@ export default function Schools({ session }) {
             </div>
             <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Synced from DecoGro — CampusLabs scrape status</div>
           </div>
-          <button onClick={() => navigate('/scraper')} style={{
-            height: '36px', padding: '0 16px', background: '#00c896', color: '#fff',
-            border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-          }}>
+          <button onClick={() => navigate('/scraper')} style={{ height: '36px', padding: '0 16px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             Scrape Schools
           </button>
         </div>
 
-        {/* Filters */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '360px' }}>
             <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9094a8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -170,7 +161,13 @@ export default function Schools({ session }) {
           )}
         </div>
 
-        {/* Table */}
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#b91c1c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {error}
+            <button onClick={() => fetchSchools()} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Retry</button>
+          </div>
+        )}
+
         <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -183,36 +180,38 @@ export default function Schools({ session }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>Loading schools from DecoGro...</td></tr>
+                  <tr><td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '20px', height: '20px', border: '2px solid #e8eaf0', borderTop: '2px solid #00c896', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                      Loading schools from DecoGro...
+                    </div>
+                    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                  </td></tr>
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>No schools found.</td></tr>
-                ) : filtered.map(school => {
-                  const status = getStatus(school);
-                  const url = getCampusLabsUrl(school);
-                  return (
-                    <tr key={school.record_id} style={{ borderBottom: '1px solid #f0f1f5', transition: 'background 0.1s' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
-                      <td style={{ padding: '10px 16px', maxWidth: '320px' }}>
-                        {url
-                          ? <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
-                              onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                              onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                            >{url}</a>
-                          : <span style={{ color: '#c5c7d4', fontSize: '12px' }}>No URL</span>
-                        }
-                      </td>
-                      <td style={{ padding: '10px 16px' }}><StatusBadge status={status} /></td>
-                    </tr>
-                  );
-                })}
+                ) : filtered.map(school => (
+                  <tr key={school.record_id} style={{ borderBottom: '1px solid #f0f1f5' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
+                    <td style={{ padding: '10px 16px', maxWidth: '320px' }}>
+                      {school.campuslabsUrl
+                        ? <a href={school.campuslabsUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                            onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                            onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                          >{school.campuslabsUrl}</a>
+                        : <span style={{ color: '#c5c7d4', fontSize: '12px' }}>No URL</span>
+                      }
+                    </td>
+                    <td style={{ padding: '10px 16px' }}><StatusBadge status={school.status} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages}</div>
