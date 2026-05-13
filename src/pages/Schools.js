@@ -4,17 +4,17 @@ import { supabase } from '../supabaseClient';
 
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
-    { label: 'Dashboard', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, path: '/dashboard' },
+    { label: 'Dashboard', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>, path: '/dashboard' },
   ]},
   { label: 'Tools', items: [
-    { label: 'Scraper', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>, path: '/scraper' },
+    { label: 'Scraper', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>, path: '/scraper' },
   ]},
   { label: 'Database', items: [
-    { label: 'Schools', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, path: '/schools' },
-    { label: 'Leads', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, path: '/leads' },
+    { label: 'Schools', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>, path: '/schools' },
+    { label: 'Leads', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, path: '/leads' },
   ]},
   { label: 'Approval', items: [
-    { label: 'Review', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, path: '/review' },
+    { label: 'Review', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>, path: '/review' },
   ]},
 ];
 
@@ -42,15 +42,18 @@ export default function Schools({ session }) {
         .order('name', { ascending: true })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
-      if (search.trim()) {
-        query = query.ilike('name', `%${search.trim()}%`);
-      }
-      if (filterStatus === 'has_url') {
-        query = query.not('campuslabs_url', 'is', null).neq('campuslabs_url', '');
+      if (search.trim()) query = query.ilike('name', `%${search.trim()}%`);
+
+      if (filterStatus === 'pending') {
+        // Has URL + status is pending
+        query = query.eq('status', 'pending').not('campuslabs_url', 'is', null).neq('campuslabs_url', '');
       } else if (filterStatus === 'no_url') {
+        // No URL regardless of status
         query = query.or('campuslabs_url.is.null,campuslabs_url.eq.');
-      } else if (filterStatus) {
-        query = query.eq('status', filterStatus);
+      } else if (filterStatus === 'in_progress') {
+        query = query.eq('status', 'in_progress');
+      } else if (filterStatus === 'done') {
+        query = query.eq('status', 'done');
       }
 
       const { data, count, error: err } = await query;
@@ -83,36 +86,71 @@ export default function Schools({ session }) {
     );
   };
 
+  const currentPath = '/schools';
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
-      <div style={{ width: '200px', minHeight: '100vh', background: '#2d3561', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
-        <div style={{ padding: '20px 16px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '32px', height: '32px', background: '#00c896', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '700', color: '#fff' }}>R</div>
-            <span style={{ fontSize: '15px', fontWeight: '700', color: '#fff', letterSpacing: '-0.2px' }}>Rushly</span>
+
+      {/* Sidebar — DecoGro style */}
+      <div style={{ width: '220px', minHeight: '100vh', background: '#1e2a4a', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
+
+        {/* Logo */}
+        <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {/* DecoGro-style "D" logo mark */}
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <rect width="28" height="28" rx="7" fill="#00c896"/>
+                <text x="7" y="20" fontSize="15" fontWeight="800" fill="white" fontFamily="DM Sans, sans-serif">R</text>
+              </svg>
+            </div>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}>
+              <span style={{ color: '#00c896' }}>R</span>ushly
+            </span>
           </div>
         </div>
-        <div style={{ padding: '12px 8px', flex: 1, overflowY: 'auto' }}>
+
+        {/* Nav */}
+        <div style={{ padding: '10px 12px', flex: 1, overflowY: 'auto' }}>
           {NAV_SECTIONS.map(section => (
-            <div key={section.label} style={{ marginBottom: '4px' }}>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.8px', padding: '8px 8px 4px' }}>{section.label}</div>
-              {section.items.map(item => (
-                <div key={item.path} onClick={() => navigate(item.path)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '7px', cursor: 'pointer', color: item.path === '/schools' ? '#fff' : 'rgba(255,255,255,0.65)', background: item.path === '/schools' ? 'rgba(255,255,255,0.1)' : 'transparent', fontSize: '13px', fontWeight: '500', marginBottom: '2px' }}
-                  onMouseEnter={e => { if (item.path !== '/schools') { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}}
-                  onMouseLeave={e => { if (item.path !== '/schools') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}}
-                >{item.icon}{item.label}</div>
-              ))}
+            <div key={section.label} style={{ marginBottom: '2px' }}>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: '1px', padding: '10px 8px 4px', fontWeight: '600' }}>{section.label}</div>
+              {section.items.map(item => {
+                const isActive = item.path === currentPath;
+                return (
+                  <div key={item.path} onClick={() => navigate(item.path)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '1px', transition: 'all 0.15s',
+                      color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
+                      background: isActive ? 'rgba(0,200,150,0.15)' : 'transparent',
+                      borderLeft: isActive ? '3px solid #00c896' : '3px solid transparent',
+                      fontSize: '13px', fontWeight: isActive ? '600' : '400'
+                    }}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}}
+                  >
+                    <span style={{ opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>
+                    {item.label}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>
-        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email || ''}</div>
-          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
+
+        {/* User */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.15)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
+              {session?.user?.email?.[0]?.toUpperCase() || 'U'}
+            </div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email || ''}</div>
+          </div>
+          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '5px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
         </div>
       </div>
 
-      <div style={{ marginLeft: '200px', flex: 1, padding: '32px', minWidth: 0 }}>
+      {/* Main */}
+      <div style={{ marginLeft: '220px', flex: 1, padding: '32px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
@@ -136,10 +174,10 @@ export default function Schools({ session }) {
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '13px', color: filterStatus ? '#1a1d2e' : '#9094a8', outline: 'none', cursor: 'pointer' }}>
             <option value="">All schools</option>
-            <option value="has_url">Has URL</option>
-            <option value="no_url">No URL</option>
+            <option value="pending">Pending (has URL)</option>
+            <option value="in_progress">In Progress</option>
             <option value="done">Done</option>
-            <option value="pending">Pending</option>
+            <option value="no_url">No URL</option>
           </select>
           {(search || filterStatus) && (
             <button onClick={() => { setSearch(''); setFilterStatus(''); }}
@@ -201,7 +239,6 @@ export default function Schools({ session }) {
               </tbody>
             </table>
           </div>
-
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages} · {total.toLocaleString()} schools</div>
