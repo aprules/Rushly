@@ -20,6 +20,7 @@ const NAV_SECTIONS = [
 ];
 
 const FIND_BATCH_SIZE = 100;
+const getPageSize = (filter) => filter === 'no_url' ? 100 : 50;
 
 async function searchCampusLabsUrl(schoolName) {
   try {
@@ -53,7 +54,7 @@ export default function Schools({ session }) {
   const [findResults, setFindResults] = useState([]);
   const stopFindRef = useRef(false);
 
-  const PAGE_SIZE = filterStatus === 'no_url' ? 100 : 50;
+  const PAGE_SIZE = getPageSize(filterStatus);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const findTotalPages = Math.ceil(noUrlTotal / FIND_BATCH_SIZE);
 
