@@ -38,6 +38,11 @@ export default function Leads({ session }) {
         query = query.or(`company.ilike.%${search}%,email_address.ilike.%${search}%,phone_number.ilike.%${search}%`);
       }
 
+      if (filterSchool) {
+        // Company format is "OrgName SchoolName" so filter by suffix
+        query = query.ilike('company', `%${filterSchool}`);
+      }
+
       const { data, count, error } = await query;
       if (!error) {
         setLeads(data || []);
@@ -45,7 +50,7 @@ export default function Leads({ session }) {
       }
     } catch(e) {}
     setLoading(false);
-  }, [search, page, sortCol, sortAsc]);
+  }, [search, filterSchool, page, sortCol, sortAsc]);
 
   // Fetch unique schools for filter
   useEffect(() => {
@@ -73,10 +78,10 @@ export default function Leads({ session }) {
 
   const handleExport = () => {
     if (leads.length === 0) return;
-    const headers = ['Company', 'Email', 'Phone', 'First Name', 'Last Name', 'Position'];
+    const headers = ['First Name', 'Last Name', 'Company', 'Phone Number', 'Email'];
     const rows = leads.map(r => [
-      r.company || '', r.email_address || '', r.phone_number || '',
-      r.first_name || '', r.last_name || '', r.position || ''
+      r.first_name || '', r.last_name || '', r.company || '',
+      r.phone_number || '', r.email_address || ''
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -224,11 +229,11 @@ export default function Leads({ session }) {
               <thead>
                 <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
                   {[
-                    { label: 'Company', col: 'company' },
-                    { label: 'Email', col: 'email_address' },
-                    { label: 'Phone', col: 'phone_number' },
                     { label: 'First Name', col: 'first_name' },
                     { label: 'Last Name', col: 'last_name' },
+                    { label: 'Company', col: 'company' },
+                    { label: 'Phone Number', col: 'phone_number' },
+                    { label: 'Email', col: 'email_address' },
                   ].map(({ label, col }) => (
                     <th key={col} onClick={() => handleSort(col)} style={{
                       padding: '10px 16px', textAlign: 'left', fontWeight: '600',
@@ -260,10 +265,15 @@ export default function Leads({ session }) {
                       onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
+                      <td style={{ padding: '10px 16px', color: '#1a1d2e' }}>{lead.first_name || '—'}</td>
+                      <td style={{ padding: '10px 16px', color: '#1a1d2e' }}>{lead.last_name || '—'}</td>
                       <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500', maxWidth: '280px' }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {lead.company || '—'}
                         </div>
+                      </td>
+                      <td style={{ padding: '10px 16px', color: lead.phone_number ? '#1a1d2e' : '#c5c7d4', whiteSpace: 'nowrap' }}>
+                        {lead.phone_number || '—'}
                       </td>
                       <td style={{ padding: '10px 16px', color: lead.email_address ? '#2563eb' : '#c5c7d4' }}>
                         {lead.email_address
@@ -273,11 +283,6 @@ export default function Leads({ session }) {
                             >{lead.email_address}</a>
                           : '—'}
                       </td>
-                      <td style={{ padding: '10px 16px', color: lead.phone_number ? '#1a1d2e' : '#c5c7d4', whiteSpace: 'nowrap' }}>
-                        {lead.phone_number || '—'}
-                      </td>
-                      <td style={{ padding: '10px 16px', color: '#1a1d2e' }}>{lead.first_name || '—'}</td>
-                      <td style={{ padding: '10px 16px', color: '#1a1d2e' }}>{lead.last_name || '—'}</td>
                     </tr>
                   ))
                 )}
