@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQE83G8ZyIWo6LAE3jG8RhD1XLCW-sz-7imqzUv62eYkkgJNXSAuLDIjnTeXchUCqr/exec';
+
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -78,6 +80,12 @@ export default function Review({ session }) {
         await supabase.from('leads').update({ company: editCompany }).eq('company', oldCompany);
         await supabase.from('companies').update({ companies: editCompany, organization: editOrg }).eq('companies', oldCompany);
       }
+      // Add to Google Sheets masterlist
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'addToMasterlist', orgName: editOrg })
+      }).catch(() => {});
       setSaving(prev => ({ ...prev, [row.id]: 'saved' }));
       // Remove from list after short delay
       setTimeout(() => {
@@ -94,6 +102,12 @@ export default function Review({ session }) {
     setSaving(prev => ({ ...prev, [row.id]: 'atm' }));
     try {
       await supabase.from('review').update({ atm: true }).eq('id', row.id);
+      // Add to Google Sheets masterlist
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'addToMasterlist', orgName: row.organization })
+      }).catch(() => {});
       // Remove from list after short delay
       setTimeout(() => {
         setRows(prev => prev.filter(r => r.id !== row.id));
