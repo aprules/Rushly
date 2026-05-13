@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import rushlyLogo from '../assets/rushly.png';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
@@ -18,7 +19,6 @@ const NAV_SECTIONS = [
   ]},
 ];
 
-const PAGE_SIZE = 50;
 const FIND_BATCH_SIZE = 100;
 
 async function searchCampusLabsUrl(schoolName) {
@@ -51,9 +51,9 @@ export default function Schools({ session }) {
   const [finding, setFinding] = useState(false);
   const [findProgress, setFindProgress] = useState({ current: 0, total: 0, found: 0, notFound: 0 });
   const [findResults, setFindResults] = useState([]);
-  const [pageInput, setPageInput] = useState('');
   const stopFindRef = useRef(false);
 
+  const PAGE_SIZE = filterStatus === 'no_url' ? 100 : 50;
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const findTotalPages = Math.ceil(noUrlTotal / FIND_BATCH_SIZE);
 
@@ -105,16 +105,6 @@ export default function Schools({ session }) {
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
-
-  const handlePageJump = (e) => {
-    if (e.key === 'Enter') {
-      const num = parseInt(pageInput);
-      if (!isNaN(num) && num >= 1 && num <= totalPages) {
-        setPage(num);
-      }
-      setPageInput('');
-    }
-  };
 
   const handleFindUrls = async () => {
     // Fetch the specific batch/page of no-url schools
@@ -185,8 +175,7 @@ export default function Schools({ session }) {
       <div style={{ width: '220px', minHeight: '100vh', background: '#1e2a4a', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
         <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#00c896"/><text x="7" y="20" fontSize="15" fontWeight="800" fill="white" fontFamily="DM Sans, sans-serif">R</text></svg>
-            <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}><span style={{ color: '#00c896' }}>R</span>ushly</span>
+            <img src={rushlyLogo} alt="Rushly" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
           </div>
         </div>
         <div style={{ padding: '10px 12px', flex: 1, overflowY: 'auto' }}>
@@ -331,27 +320,6 @@ export default function Schools({ session }) {
           </div>
         )}
 
-        {/* Top pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#9094a8' }}>{total.toLocaleString()} schools · Page {page} of {totalPages}</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page === 1 ? '#c5c7d4' : '#1a1d2e', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>← Prev</button>
-              <input
-                value={pageInput}
-                onChange={e => setPageInput(e.target.value)}
-                onKeyDown={handlePageJump}
-                placeholder={String(page)}
-                style={{ width: '48px', height: '30px', border: '1px solid #e8eaf0', borderRadius: '6px', textAlign: 'center', fontSize: '12px', color: '#1a1d2e', outline: 'none' }}
-              />
-              <span style={{ fontSize: '12px', color: '#9094a8' }}>of {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-                style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page >= totalPages ? '#c5c7d4' : '#1a1d2e', cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}>Next →</button>
-            </div>
-          </div>
-        )}
-
         {/* Table */}
         <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
@@ -414,17 +382,9 @@ export default function Schools({ session }) {
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages} · {total.toLocaleString()} schools</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                   style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page === 1 ? '#c5c7d4' : '#1a1d2e', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>← Prev</button>
-                <input
-                  value={pageInput}
-                  onChange={e => setPageInput(e.target.value)}
-                  onKeyDown={handlePageJump}
-                  placeholder={String(page)}
-                  style={{ width: '48px', height: '30px', border: '1px solid #e8eaf0', borderRadius: '6px', textAlign: 'center', fontSize: '12px', color: '#1a1d2e', outline: 'none' }}
-                />
-                <span style={{ fontSize: '12px', color: '#9094a8' }}>of {totalPages}</span>
                 <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
                   style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page >= totalPages ? '#c5c7d4' : '#1a1d2e', cursor: page >= totalPages ? 'not-allowed' : 'pointer' }}>Next →</button>
               </div>
