@@ -18,14 +18,7 @@ const NAV_SECTIONS = [
   ]},
 ];
 
-const getStatus = (school) => {
-  const status = school['CampusLabs Status'];
-  if (!status || status.length === 0) return 'none';
-  const val = status[0]?.value || '';
-  if (val === 'Done') return 'done';
-  if (val === 'In progress') return 'inprogress';
-  return 'none';
-};
+const PAGE_SIZE = 50;
 
 export default function Schools({ session }) {
   const navigate = useNavigate();
@@ -35,39 +28,59 @@ export default function Schools({ session }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const fetchSchools = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const params = new URLSearchParams({ page, ...(search && { search }) });
-      const res = await fetch(`/api/decogro-schools?${params}`);
-      const json = await res.json();
-      if (json.success && json.data) {
-        setSchools(json.data.data || []);
-        setTotalPages(json.data.pagination?.totalPages || 1);
-        setTotal(json.data.pagination?.total || 0);
-      } else {
-        setError('Could not load schools.');
+      let query = supabase
+        .from('schools')
+        .select('*', { count: 'exact' })
+        .order('name', { ascending: true })
+        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+
+      if (search.trim()) {
+        query = query.ilike('name', `%${search.trim()}%`);
       }
-    } catch(e) {
-      setError('Failed to load schools. Please try again.');
+      if (filterStatus === 'has_url') {
+        query = query.not('campuslabs_url', 'is', null).neq('campuslabs_url', '');
+      } else if (filterStatus === 'no_url') {
+        query = query.or('campuslabs_url.is.null,campuslabs_url.eq.');
+      } else if (filterStatus) {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, count, error: err } = await query;
+      if (err) throw err;
+      setSchools(data || []);
+      setTotal(count || 0);
+    } catch (e) {
+      setError('Failed to load schools.');
     }
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, filterStatus]);
 
   useEffect(() => { fetchSchools(); }, [fetchSchools]);
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
-  const filtered = filterStatus ? schools.filter(s => getStatus(s) === filterStatus) : schools;
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
-  const StatusBadge = ({ status }) => {
-    if (status === 'done') return <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px' }}>✓ Done</span>;
-    if (status === 'inprogress') return <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>;
-    return <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Not started</span>;
+  const StatusBadge = ({ school }) => {
+    if (school.status === 'done') return (
+      <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px' }}>✓ Done</span>
+    );
+    if (school.status === 'in_progress') return (
+      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>
+    );
+    if (!school.campuslabs_url) return (
+      <span style={{ fontSize: '11px', color: '#e05c5c', fontWeight: '500', background: '#fef2f2', padding: '3px 10px', borderRadius: '20px' }}>✕ No URL</span>
+    );
+    return (
+      <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Pending</span>
+    );
   };
 
   return (
@@ -106,7 +119,7 @@ export default function Schools({ session }) {
               Schools
               {total > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '10px' }}>({total.toLocaleString()})</span>}
             </div>
-            <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Synced from DecoGro — CampusLabs scrape status</div>
+            <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>All schools — CampusLabs scrape targets</div>
           </div>
           <button onClick={() => navigate('/scraper')} style={{ height: '36px', padding: '0 16px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -122,14 +135,17 @@ export default function Schools({ session }) {
           </div>
           <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
             style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '13px', color: filterStatus ? '#1a1d2e' : '#9094a8', outline: 'none', cursor: 'pointer' }}>
-            <option value="">All statuses</option>
+            <option value="">All schools</option>
+            <option value="has_url">Has URL</option>
+            <option value="no_url">No URL</option>
             <option value="done">Done</option>
-            <option value="inprogress">In Progress</option>
-            <option value="none">Not Started</option>
+            <option value="pending">Pending</option>
           </select>
           {(search || filterStatus) && (
             <button onClick={() => { setSearch(''); setFilterStatus(''); }}
-              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>✕ Clear</button>
+              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>
+              ✕ Clear
+            </button>
           )}
         </div>
 
@@ -145,51 +161,50 @@ export default function Schools({ session }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
-                  {['School Name', 'CampusLabs URL', 'Status'].map(label => (
-                    <th key={label} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px', whiteSpace: 'nowrap' }}>{label}</th>
-                  ))}
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>#</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>School Name</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>CampusLabs URL</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>
+                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                       <div style={{ width: '20px', height: '20px', border: '2px solid #e8eaf0', borderTop: '2px solid #00c896', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                      Loading schools from DecoGro...
+                      Loading schools...
                     </div>
                     <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
                   </td></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><td colSpan={3} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>No schools found.</td></tr>
-                ) : filtered.map(school => {
-                  const status = getStatus(school);
-                  const url = school['Campus Labs Site'] || '';
-                  return (
-                    <tr key={school.record_id} style={{ borderBottom: '1px solid #f0f1f5' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
-                      <td style={{ padding: '10px 16px', maxWidth: '320px' }}>
-                        {url
-                          ? <a href={url} target="_blank" rel="noopener noreferrer"
-                              style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
-                              onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                              onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                            >{url}</a>
-                          : <span style={{ color: '#c5c7d4', fontSize: '12px' }}>No URL</span>
-                        }
-                      </td>
-                      <td style={{ padding: '10px 16px' }}><StatusBadge status={status} /></td>
-                    </tr>
-                  );
-                })}
+                ) : schools.length === 0 ? (
+                  <tr><td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#9094a8' }}>No schools found.</td></tr>
+                ) : schools.map((school, i) => (
+                  <tr key={school.id} style={{ borderBottom: '1px solid #f0f1f5' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <td style={{ padding: '10px 16px', color: '#c5c7d4', fontSize: '12px' }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
+                    <td style={{ padding: '10px 16px', maxWidth: '360px' }}>
+                      {school.campuslabs_url
+                        ? <a href={school.campuslabs_url} target="_blank" rel="noopener noreferrer"
+                            style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                            onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                            onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                          >{school.campuslabs_url}</a>
+                        : <span style={{ color: '#c5c7d4', fontSize: '12px' }}>—</span>
+                      }
+                    </td>
+                    <td style={{ padding: '10px 16px' }}><StatusBadge school={school} /></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+
           {totalPages > 1 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb' }}>
-              <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages}</div>
+              <div style={{ fontSize: '12px', color: '#9094a8' }}>Page {page} of {totalPages} · {total.toLocaleString()} schools</div>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
                   style={{ height: '30px', padding: '0 12px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '6px', fontSize: '12px', color: page === 1 ? '#c5c7d4' : '#1a1d2e', cursor: page === 1 ? 'not-allowed' : 'pointer' }}>← Prev</button>
