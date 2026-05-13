@@ -116,7 +116,15 @@ export default function Scraper({ session }) {
     setRunning(false);
     setDone(true);
     setProgress(100);
-    setTimeout(() => { setDone(false); setStatus(''); setProgress(0); }, 5000);
+    setTimeout(() => {
+      setDone(false);
+      setStatus('');
+      setProgress(0);
+      // Reset school inputs to default
+      setSchoolCount(1);
+      setSchools([{ name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }, { name: '', url: '' }]);
+      localStorage.removeItem('rushly_schools');
+    }, 5000);
   };
 
   const startPolling = (sessionId) => {

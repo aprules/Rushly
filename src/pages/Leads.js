@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   ), path: '/leads' },
 ];
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE_OPTIONS = [50, 100, 150];
 
 export default function Leads({ session }) {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export default function Leads({ session }) {
   const [page, setPage] = useState(0);
   const [sortCol, setSortCol] = useState('company');
   const [sortAsc, setSortAsc] = useState(true);
+  const [pageSize, setPageSize] = useState(50);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
@@ -32,7 +33,7 @@ export default function Leads({ session }) {
         .from('leads')
         .select('*', { count: 'exact' })
         .order(sortCol, { ascending: sortAsc })
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
       if (search) {
         query = query.or(`company.ilike.%${search}%,email_address.ilike.%${search}%,phone_number.ilike.%${search}%`);
@@ -50,7 +51,7 @@ export default function Leads({ session }) {
       }
     } catch(e) {}
     setLoading(false);
-  }, [search, filterSchool, page, sortCol, sortAsc]);
+  }, [search, filterSchool, page, sortCol, sortAsc, pageSize]);
 
   // Fetch unique schools for filter
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function Leads({ session }) {
   // Reset page on search/filter change
   useEffect(() => {
     setPage(0);
-  }, [search, filterSchool]);
+  }, [search, filterSchool, pageSize]);
 
   const handleSort = (col) => {
     if (sortCol === col) setSortAsc(a => !a);
@@ -100,7 +101,7 @@ export default function Leads({ session }) {
     return <span style={{ color: '#00c896', marginLeft: '4px' }}>{sortAsc ? '↑' : '↓'}</span>;
   };
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = Math.ceil(total / pageSize);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
@@ -212,6 +213,15 @@ export default function Leads({ session }) {
             </select>
           )}
 
+          {/* Page size */}
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }} style={{
+            height: '36px', background: '#fff', border: '1px solid #e8eaf0',
+            borderRadius: '7px', padding: '0 12px', fontSize: '13px',
+            color: '#1a1d2e', outline: 'none', cursor: 'pointer'
+          }}>
+            {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s} per page</option>)}
+          </select>
+
           {/* Clear filters */}
           {(search || filterSchool) && (
             <button onClick={() => { setSearch(''); setFilterSchool(''); }} style={{
@@ -297,7 +307,7 @@ export default function Leads({ session }) {
               padding: '12px 16px', borderTop: '1px solid #e8eaf0', background: '#f9fafb'
             }}>
               <div style={{ fontSize: '12px', color: '#9094a8' }}>
-                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total.toLocaleString()}
+                Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total.toLocaleString()}
               </div>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button
