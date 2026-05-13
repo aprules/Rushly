@@ -88,7 +88,7 @@ export default function Dashboard({ session }) {
 
 
       {/* Main */}
-      <div style={{ marginLeft: '230px', flex: 1, padding: '32px' }}>
+      <div style={{ marginLeft: '200px', flex: 1, padding: '32px' }}>
         <div style={{ marginBottom: '28px' }}>
           <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>Dashboard</div>
           <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Overview of all Rushly tools and modules</div>
@@ -103,7 +103,7 @@ export default function Dashboard({ session }) {
                 <div style={{ width: '3px', height: '18px', background: section.color, borderRadius: '2px' }} />
                 <div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>{section.label}</span>
-                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '230px' }}>{section.description}</span>
+                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '200px' }}>{section.description}</span>
                 </div>
               </div>
 

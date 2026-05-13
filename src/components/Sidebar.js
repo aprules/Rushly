@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import rushlyLogo from '../assets/rushly.png';
@@ -19,11 +19,27 @@ const NAV_SECTIONS = [
   ]},
 ];
 
+const PAGE_TITLES = {
+  '/dashboard': 'Dashboard',
+  '/scraper': 'Scraper',
+  '/schools': 'Schools',
+  '/leads': 'Leads',
+  '/review': 'Review',
+};
+
+export const SIDEBAR_WIDTH = '200px';
+
 export default function Sidebar({ session }) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const [collapsed, setCollapsed] = useState({});
+
+  // Update browser tab title
+  useEffect(() => {
+    const title = PAGE_TITLES[currentPath] || 'Rushly';
+    document.title = `${title} | Rushly`;
+  }, [currentPath]);
 
   const toggleSection = (label) => {
     setCollapsed(prev => ({ ...prev, [label]: !prev[label] }));
@@ -33,27 +49,27 @@ export default function Sidebar({ session }) {
 
   return (
     <div style={{
-      width: '230px', minHeight: '100vh', background: '#405189',
+      width: SIDEBAR_WIDTH, minHeight: '100vh', background: '#405189',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
       position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10,
       fontFamily: "'DM Sans', Segoe UI, sans-serif"
     }}>
       {/* Logo */}
-      <div style={{ padding: '20px 20px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+      <div style={{ padding: '20px 16px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
         onClick={() => navigate('/dashboard')}>
-        <img src={rushlyLogo} alt="Rushly" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+        <img src={rushlyLogo} alt="Rushly" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
       </div>
 
       {/* Nav */}
-      <div style={{ padding: '8px 12px', flex: 1, overflowY: 'auto' }}>
+      <div style={{ padding: '8px 10px', flex: 1, overflowY: 'auto' }}>
         {NAV_SECTIONS.map(section => {
           const isCollapsed = collapsed[section.label];
           const hasActive = section.items.some(i => i.path === currentPath);
           return (
-            <div key={section.label} style={{ marginBottom: '4px' }}>
+            <div key={section.label} style={{ marginBottom: '6px' }}>
               <div
                 onClick={() => toggleSection(section.label)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px 6px', cursor: 'pointer', borderRadius: '5px' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 10px 5px', cursor: 'pointer', borderRadius: '5px' }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
@@ -72,7 +88,7 @@ export default function Sidebar({ session }) {
                 return (
                   <div key={item.path} onClick={() => navigate(item.path)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '11px',
+                      display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '9px 12px', borderRadius: '6px', cursor: 'pointer',
                       marginBottom: '2px', transition: 'all 0.15s',
                       color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
@@ -94,14 +110,14 @@ export default function Sidebar({ session }) {
       </div>
 
       {/* User */}
-      <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.12)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-          <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
+      <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.12)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
             {session?.user?.email?.[0]?.toUpperCase() || 'U'}
           </div>
           <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email || ''}</div>
         </div>
-        <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '6px 12px', fontSize: '13px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
+        <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '6px 10px', fontSize: '13px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
       </div>
     </div>
   );
