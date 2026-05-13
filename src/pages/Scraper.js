@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import Sidebar, { SIDEBAR_WIDTH } from '../components/Sidebar';
+import Sidebar, { 175px } from '../components/Sidebar';
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
 const SUPABASE_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -302,7 +302,7 @@ export default function Scraper({ session }) {
       </div>
 
       {/* Main content */}
-      <div style={{ marginLeft: SIDEBAR_WIDTH, flex: 1, display: 'flex', minHeight: '100vh' }}>
+      <div style={{ marginLeft: 175px, flex: 1, display: 'flex', minHeight: '100vh' }}>
 
         {/* LEFT COLUMN */}
         <div style={{ width: '400px', flexShrink: 0, padding: '28px 24px', borderRight: '1px solid #e8eaf0', background: '#f5f6fa', overflowY: 'auto' }}>

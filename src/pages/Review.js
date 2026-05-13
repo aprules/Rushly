@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import Sidebar, { SIDEBAR_WIDTH } from '../components/Sidebar';
+import Sidebar, { 175px } from '../components/Sidebar';
 
 const NAV_SECTIONS = [
   { label: 'Menu', items: [
@@ -137,7 +137,7 @@ export default function Review({ session }) {
         </div>
       </div>
 
-      <div style={{ marginLeft: SIDEBAR_WIDTH, flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: 175px, flex: 1, padding: '32px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>

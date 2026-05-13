@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Sidebar, { SIDEBAR_WIDTH } from '../components/Sidebar';
+import Sidebar, { 175px } from '../components/Sidebar';
 import { supabase } from '../supabaseClient';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 150];
@@ -97,7 +97,7 @@ export default function Leads({ session }) {
 
 
       {/* Main */}
-      <div style={{ marginLeft: SIDEBAR_WIDTH, flex: 1, padding: '32px', minWidth: 0 }}>
+      <div style={{ marginLeft: 175px, flex: 1, padding: '32px', minWidth: 0 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
