@@ -22,7 +22,7 @@ const PAGE_SIZE = 50;
 
 async function searchCampusLabsUrl(schoolName) {
   try {
-    const query = encodeURIComponent(`${schoolName} campuslabs engage site:campuslabs.com`);
+    
     const res = await fetch(`https://api.anthropic.com/v1/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
