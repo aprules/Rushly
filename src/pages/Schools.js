@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
@@ -20,6 +20,30 @@ const NAV_SECTIONS = [
 
 const PAGE_SIZE = 50;
 
+async function searchCampusLabsUrl(schoolName) {
+  try {
+    const query = encodeURIComponent(`${schoolName} campuslabs engage site:campuslabs.com`);
+    const res = await fetch(`https://api.anthropic.com/v1/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        messages: [{
+          role: 'user',
+          content: `What is the CampusLabs Engage URL for ${schoolName}? It typically looks like https://schoolname.campuslabs.com/engage or https://schoolname.campuslabs.com/engage/organizations. Reply with ONLY the URL or "none" if you don't know it.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim() || 'none';
+    if (text === 'none' || !text.includes('campuslabs.com')) return null;
+    return text;
+  } catch(e) {
+    return null;
+  }
+}
+
 export default function Schools({ session }) {
   const navigate = useNavigate();
   const [schools, setSchools] = useState([]);
@@ -29,6 +53,12 @@ export default function Schools({ session }) {
   const [filterStatus, setFilterStatus] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+
+  // Find URLs state
+  const [finding, setFinding] = useState(false);
+  const [findProgress, setFindProgress] = useState({ current: 0, total: 0, found: 0, notFound: 0 });
+  const [findResults, setFindResults] = useState([]);
+  const stopFindRef = useRef(false);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -45,11 +75,11 @@ export default function Schools({ session }) {
       if (search.trim()) query = query.ilike('name', `%${search.trim()}%`);
 
       if (filterStatus === 'pending') {
-        // Has URL + status is pending
         query = query.eq('status', 'pending').not('campuslabs_url', 'is', null).neq('campuslabs_url', '');
       } else if (filterStatus === 'no_url') {
-        // No URL regardless of status
-        query = query.or('campuslabs_url.is.null,campuslabs_url.eq.');
+        query = query.eq('status', 'pending').or('campuslabs_url.is.null,campuslabs_url.eq.');
+      } else if (filterStatus === 'needs_review') {
+        query = query.eq('status', 'needs_review');
       } else if (filterStatus === 'in_progress') {
         query = query.eq('status', 'in_progress');
       } else if (filterStatus === 'done') {
@@ -71,19 +101,74 @@ export default function Schools({ session }) {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
+  // Find CampusLabs URLs for no-URL schools
+  const handleFindUrls = async () => {
+    const { data: noUrlSchools } = await supabase
+      .from('schools')
+      .select('id, name')
+      .eq('status', 'pending')
+      .or('campuslabs_url.is.null,campuslabs_url.eq.')
+      .order('name', { ascending: true })
+      .limit(50);
+
+    if (!noUrlSchools || noUrlSchools.length === 0) return;
+
+    setFinding(true);
+    stopFindRef.current = false;
+    setFindResults([]);
+    setFindProgress({ current: 0, total: noUrlSchools.length, found: 0, notFound: 0 });
+
+    let found = 0, notFound = 0;
+    const results = [];
+
+    for (let i = 0; i < noUrlSchools.length; i++) {
+      if (stopFindRef.current) break;
+      const school = noUrlSchools[i];
+      const url = await searchCampusLabsUrl(school.name);
+
+      if (url) {
+        await supabase.from('schools').update({ suggested_url: url, status: 'needs_review' }).eq('id', school.id);
+        found++;
+        results.push({ id: school.id, name: school.name, url, found: true });
+      } else {
+        notFound++;
+        results.push({ id: school.id, name: school.name, url: null, found: false });
+      }
+
+      setFindProgress({ current: i + 1, total: noUrlSchools.length, found, notFound });
+      setFindResults([...results]);
+    }
+
+    setFinding(false);
+    fetchSchools();
+  };
+
+  // Approve suggested URL
+  const handleApprove = async (school) => {
+    await supabase.from('schools').update({
+      campuslabs_url: school.suggested_url,
+      suggested_url: null,
+      status: 'pending'
+    }).eq('id', school.id);
+    fetchSchools();
+  };
+
+  // Reject suggested URL
+  const handleReject = async (school) => {
+    await supabase.from('schools').update({
+      suggested_url: null,
+      status: 'pending',
+      campuslabs_url: null
+    }).eq('id', school.id);
+    fetchSchools();
+  };
+
   const StatusBadge = ({ school }) => {
-    if (school.status === 'done') return (
-      <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px' }}>✓ Done</span>
-    );
-    if (school.status === 'in_progress') return (
-      <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>
-    );
-    if (!school.campuslabs_url) return (
-      <span style={{ fontSize: '11px', color: '#e05c5c', fontWeight: '500', background: '#fef2f2', padding: '3px 10px', borderRadius: '20px' }}>✕ No URL</span>
-    );
-    return (
-      <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Pending</span>
-    );
+    if (school.status === 'done') return <span style={{ fontSize: '11px', color: '#00c896', fontWeight: '600', background: '#e8faf5', padding: '3px 10px', borderRadius: '20px' }}>✓ Done</span>;
+    if (school.status === 'in_progress') return <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600', background: '#fffbeb', padding: '3px 10px', borderRadius: '20px' }}>⏳ In Progress</span>;
+    if (school.status === 'needs_review') return <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: '600', background: '#f5f3ff', padding: '3px 10px', borderRadius: '20px' }}>👁 Needs Review</span>;
+    if (!school.campuslabs_url) return <span style={{ fontSize: '11px', color: '#e05c5c', fontWeight: '500', background: '#fef2f2', padding: '3px 10px', borderRadius: '20px' }}>✕ No URL</span>;
+    return <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Pending</span>;
   };
 
   const currentPath = '/schools';
@@ -91,26 +176,14 @@ export default function Schools({ session }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
 
-      {/* Sidebar — DecoGro style */}
+      {/* Sidebar */}
       <div style={{ width: '220px', minHeight: '100vh', background: '#1e2a4a', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10 }}>
-
-        {/* Logo */}
         <div style={{ padding: '18px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              {/* DecoGro-style "D" logo mark */}
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="7" fill="#00c896"/>
-                <text x="7" y="20" fontSize="15" fontWeight="800" fill="white" fontFamily="DM Sans, sans-serif">R</text>
-              </svg>
-            </div>
-            <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}>
-              <span style={{ color: '#00c896' }}>R</span>ushly
-            </span>
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="7" fill="#00c896"/><text x="7" y="20" fontSize="15" fontWeight="800" fill="white" fontFamily="DM Sans, sans-serif">R</text></svg>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff', letterSpacing: '-0.3px' }}><span style={{ color: '#00c896' }}>R</span>ushly</span>
           </div>
         </div>
-
-        {/* Nav */}
         <div style={{ padding: '10px 12px', flex: 1, overflowY: 'auto' }}>
           {NAV_SECTIONS.map(section => (
             <div key={section.label} style={{ marginBottom: '2px' }}>
@@ -119,25 +192,15 @@ export default function Schools({ session }) {
                 const isActive = item.path === currentPath;
                 return (
                   <div key={item.path} onClick={() => navigate(item.path)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '1px', transition: 'all 0.15s',
-                      color: isActive ? '#fff' : 'rgba(255,255,255,0.55)',
-                      background: isActive ? 'rgba(0,200,150,0.15)' : 'transparent',
-                      borderLeft: isActive ? '3px solid #00c896' : '3px solid transparent',
-                      fontSize: '13px', fontWeight: isActive ? '600' : '400'
-                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', borderRadius: '6px', cursor: 'pointer', marginBottom: '1px', transition: 'all 0.15s', color: isActive ? '#fff' : 'rgba(255,255,255,0.55)', background: isActive ? 'rgba(0,200,150,0.15)' : 'transparent', borderLeft: isActive ? '3px solid #00c896' : '3px solid transparent', fontSize: '13px', fontWeight: isActive ? '600' : '400' }}
                     onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#fff'; }}}
                     onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}}
-                  >
-                    <span style={{ opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>
-                    {item.label}
-                  </div>
+                  ><span style={{ opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>{item.label}</div>
                 );
               })}
             </div>
           ))}
         </div>
-
-        {/* User */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.15)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
@@ -165,6 +228,7 @@ export default function Schools({ session }) {
           </button>
         </div>
 
+        {/* Filters */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '360px' }}>
             <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9094a8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -178,14 +242,53 @@ export default function Schools({ session }) {
             <option value="in_progress">In Progress</option>
             <option value="done">Done</option>
             <option value="no_url">No URL</option>
+            <option value="needs_review">Needs Review</option>
           </select>
           {(search || filterStatus) && (
             <button onClick={() => { setSearch(''); setFilterStatus(''); }}
-              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>
-              ✕ Clear
+              style={{ height: '36px', background: '#fff', border: '1px solid #e8eaf0', borderRadius: '7px', padding: '0 12px', fontSize: '12px', color: '#e05c5c', cursor: 'pointer', fontWeight: '500' }}>✕ Clear</button>
+          )}
+          {filterStatus === 'no_url' && !finding && (
+            <button onClick={handleFindUrls}
+              style={{ height: '36px', padding: '0 16px', background: '#8b5cf6', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Find CampusLabs URLs
+            </button>
+          )}
+          {finding && (
+            <button onClick={() => { stopFindRef.current = true; }}
+              style={{ height: '36px', padding: '0 16px', background: '#e05c5c', color: '#fff', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+              ✕ Stop
             </button>
           )}
         </div>
+
+        {/* Find progress */}
+        {(finding || findResults.length > 0) && (
+          <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1a1d2e' }}>
+                {finding ? `Searching... ${findProgress.current} / ${findProgress.total}` : `Done — ${findProgress.found} found, ${findProgress.notFound} not found`}
+              </div>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '12px' }}>
+                <span style={{ color: '#00c896', fontWeight: '600' }}>✓ {findProgress.found} found</span>
+                <span style={{ color: '#e05c5c', fontWeight: '600' }}>✗ {findProgress.notFound} not found</span>
+              </div>
+            </div>
+            <div style={{ height: '4px', background: '#e8eaf0', borderRadius: '2px', overflow: 'hidden', marginBottom: '12px' }}>
+              <div style={{ height: '100%', background: '#8b5cf6', borderRadius: '2px', transition: 'width 0.3s ease', width: findProgress.total ? `${(findProgress.current / findProgress.total) * 100}%` : '0%' }} />
+            </div>
+            <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {findResults.slice().reverse().map((r, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', padding: '4px 0', borderBottom: '1px solid #f5f6fa' }}>
+                  <span style={{ color: r.found ? '#00c896' : '#e05c5c', fontWeight: '600', flexShrink: 0 }}>{r.found ? '✓' : '✗'}</span>
+                  <span style={{ color: '#1a1d2e', fontWeight: '500', flexShrink: 0, minWidth: '200px' }}>{r.name}</span>
+                  {r.url && <span style={{ color: '#2563eb', fontSize: '11px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {error && (
           <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '13px', color: '#b91c1c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -194,6 +297,7 @@ export default function Schools({ session }) {
           </div>
         )}
 
+        {/* Table */}
         <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -223,15 +327,30 @@ export default function Schools({ session }) {
                   >
                     <td style={{ padding: '10px 16px', color: '#c5c7d4', fontSize: '12px' }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{school.name}</td>
-                    <td style={{ padding: '10px 16px', maxWidth: '360px' }}>
-                      {school.campuslabs_url
-                        ? <a href={school.campuslabs_url} target="_blank" rel="noopener noreferrer"
-                            style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                    <td style={{ padding: '10px 16px', maxWidth: '320px' }}>
+                      {school.status === 'needs_review' && school.suggested_url ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <a href={school.suggested_url} target="_blank" rel="noopener noreferrer"
+                            style={{ color: '#8b5cf6', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px', display: 'block' }}
                             onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
                             onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                          >{school.campuslabs_url}</a>
-                        : <span style={{ color: '#c5c7d4', fontSize: '12px' }}>—</span>
-                      }
+                          >{school.suggested_url}</a>
+                          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                            <button onClick={() => handleApprove(school)}
+                              style={{ height: '24px', padding: '0 10px', background: '#00c896', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✓ Good</button>
+                            <button onClick={() => handleReject(school)}
+                              style={{ height: '24px', padding: '0 10px', background: '#fef2f2', color: '#e05c5c', border: '1px solid #fecaca', borderRadius: '5px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>✗ No Good</button>
+                          </div>
+                        </div>
+                      ) : school.campuslabs_url ? (
+                        <a href={school.campuslabs_url} target="_blank" rel="noopener noreferrer"
+                          style={{ color: '#2563eb', textDecoration: 'none', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}
+                          onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
+                        >{school.campuslabs_url}</a>
+                      ) : (
+                        <span style={{ color: '#c5c7d4', fontSize: '12px' }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '10px 16px' }}><StatusBadge school={school} /></td>
                   </tr>
