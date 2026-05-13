@@ -7,19 +7,28 @@ export default async function handler(req, res) {
   const DECOGRO_KEY = 'ak_live_14d8946a76e2c99814586ab48a64c555.sk_63c8b9956ddd90770208b352d9fb01b9ff463b4fdd4fd6548bb5663e2d951113';
   const { page = 1, search = '' } = req.query;
 
-  const params = new URLSearchParams({ limit: 50, page });
+  const params = new URLSearchParams({ table_id: 'schools', limit: 50, page });
   if (search) params.append('search', search);
 
-  try {
-    const response = await fetch(`https://app.decogro.com/board/schools/get_data?${params}`, {
-      headers: {
-        'Authorization': `Bearer ${DECOGRO_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    const data = await response.json();
-    res.status(200).json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  const attempts = [
+    `https://app.decogro.com/api/boards/data?${params}`,
+    `https://app.decogro.com/api/v1/boards/data?${params}`,
+    `https://api.decogro.com/v1/boards/data?${params}`,
+    `https://api.decogro.com/boards/data?${params}`,
+  ];
+
+  const results = {};
+  for (const url of attempts) {
+    try {
+      const r = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${DECOGRO_KEY}`, 'Content-Type': 'application/json' }
+      });
+      const text = await r.text();
+      results[url] = { status: r.status, preview: text.slice(0, 200) };
+    } catch (e) {
+      results[url] = { error: e.message };
+    }
   }
+
+  res.status(200).json(results);
 }
