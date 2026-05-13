@@ -1,7 +1,7 @@
 /* global chrome */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
@@ -49,7 +49,7 @@ function DecogroAnimation({ running }) {
 }
 
 export default function Scraper({ session }) {
-  const navigate = useNavigate();
+  const navigate =();
   const [schoolCount, setSchoolCount] = useState(1);
   const [schools, setSchools] = useState([
     { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' },
@@ -248,8 +248,6 @@ export default function Scraper({ session }) {
       setRunning(false);
     }
   };
-
-  const handleLogout = async () => { await supabase.auth.signOut(); };
 
   // Get already-selected school IDs to avoid duplicates in dropdowns
   const selectedIds = schools.slice(0, schoolCount).map(s => s.id).filter(Boolean);

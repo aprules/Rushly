@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 export default function Review({ session }) {
-  const navigate = useNavigate();
+  const navigate =();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -89,8 +89,6 @@ export default function Review({ session }) {
       setSaving(prev => ({ ...prev, [row.id]: null }));
     }
   };
-
-  const handleLogout = async () => { await supabase.auth.signOut(); };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>

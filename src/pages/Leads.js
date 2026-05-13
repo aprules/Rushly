@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
+import { } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 const PAGE_SIZE_OPTIONS = [50, 100, 150];
 
 export default function Leads({ session }) {
-  const navigate = useNavigate();
+  const navigate =();
   const [leads, setLeads] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -82,10 +82,6 @@ export default function Leads({ session }) {
     const a = document.createElement('a');
     a.href = url; a.download = 'rushly-leads.csv'; a.click();
     URL.revokeObjectURL(url);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
   };
 
   const SortIcon = ({ col }) => {

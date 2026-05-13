@@ -80,7 +80,6 @@ const DASHBOARD_SECTIONS = [
 
 export default function Dashboard({ session }) {
   const navigate = useNavigate();
-  const handleLogout = async () => { await supabase.auth.signOut(); };
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>

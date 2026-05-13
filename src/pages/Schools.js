@@ -89,8 +89,6 @@ export default function Schools({ session }) {
   useEffect(() => { fetchSchools(); }, [fetchSchools]);
   useEffect(() => { setPage(1); }, [search, filterStatus]);
 
-  const handleLogout = async () => { await supabase.auth.signOut(); };
-
   const handlePageJump = (e) => {
     if (e.key === 'Enter') {
       const num = parseInt(pageInput);
@@ -169,8 +167,6 @@ export default function Schools({ session }) {
     if (!school.campuslabs_url) return <span style={{ fontSize: '11px', color: '#e05c5c', fontWeight: '500', background: '#fef2f2', padding: '3px 10px', borderRadius: '20px' }}>✕ No URL</span>;
     return <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Pending</span>;
   };
-
-  const currentPath = '/schools';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
