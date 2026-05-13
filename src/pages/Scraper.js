@@ -138,8 +138,24 @@ export default function Scraper({ session }) {
 
         let totalScraped = 0, totalEmails = 0, totalPhones = 0, totalMatched = 0;
         const logs = {};
+        let currentStatus = '';
+        let currentPct = 0;
 
+        // Get latest row per school (highest id)
+        const latest = {};
         for (const row of data) {
+          if (!latest[row.school_name] || row.id > latest[row.school_name].id) {
+            latest[row.school_name] = row;
+          }
+        }
+
+        for (const row of Object.values(latest)) {
+          // __status__ row is only for status display
+          if (row.school_name === '__status__') {
+            currentStatus = row.status || '';
+            currentPct = row.pct || 0;
+            continue;
+          }
           totalScraped += row.scraped || 0;
           totalEmails  += row.emails  || 0;
           totalPhones  += row.phones  || 0;
@@ -153,38 +169,36 @@ export default function Scraper({ session }) {
             time:    row.time_taken || '',
             done:    row.done
           };
-          if (row.status && !row.done) {
-            setStatus(row.status);
-            if (row.pct) setProgress(row.pct);
+          // Use per-school status if no __status__ row
+          if (!currentStatus && row.status && !row.done) {
+            currentStatus = row.status;
+            currentPct = row.pct || 0;
           }
         }
 
+        // Update status and progress
+        if (currentStatus) setStatus(currentStatus);
+        if (currentPct) setProgress(currentPct);
+
         setStats({ scraped: totalScraped, emails: totalEmails, phones: totalPhones, matched: totalMatched });
-        // Never remove a school from the log — only add or update
+
+        // FLICKER FIX: never remove a school from logs, only add/update
         setSchoolLogs(prev => {
           const merged = { ...prev };
           for (const [name, entry] of Object.entries(logs)) {
-            const existing = merged[name];
-            // Update if: no existing entry, OR new entry is done, OR new entry has more orgs scraped
-            if (!existing || entry.done || (entry.orgs || 0) > (existing.orgs || 0)) {
+            if (!merged[name] || entry.done || (entry.orgs || 0) >= (merged[name].orgs || 0)) {
               merged[name] = entry;
             }
           }
           return merged;
         });
+
         lastActivityRef.current = Date.now();
 
-        // Use ref for school count so it's always current
-        // Get latest row per school (highest id) and check if all done
-        const latest = {};
-        for (const row of data) {
-          if (!latest[row.school_name] || row.id > latest[row.school_name].id) {
-            latest[row.school_name] = row;
-          }
-        }
-        const latestRows = Object.values(latest);
+        // Done check — exclude __status__ row
+        const schoolLatest = Object.values(latest).filter(r => r.school_name !== '__status__');
         const expectedSchools = activeSchoolsCountRef.current || 1;
-        const allDone = latestRows.length >= expectedSchools && latestRows.every(r => r.done);
+        const allDone = schoolLatest.length >= expectedSchools && schoolLatest.every(r => r.done);
         if (allDone) finishScrape();
       } catch(e) {}
     }, 1000);
