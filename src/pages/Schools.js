@@ -182,7 +182,7 @@ export default function Schools({ session }) {
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
               Schools
-              {total > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '175px' }}>({total.toLocaleString()})</span>}
+              {total > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '10px' }}>({total.toLocaleString()})</span>}
             </div>
             <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>All schools — CampusLabs scrape targets</div>
           </div>
