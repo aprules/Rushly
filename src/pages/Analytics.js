@@ -142,9 +142,21 @@ export default function Analytics({ session }) {
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1d2e' }}>School Performance</div>
-              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>
-                {tab === 'overall' ? 'Scored: +40 leads 300+  ·  +30 phones 500+  ·  +20 emails 1000+  ·  +10 both 100+' : 'Top 10 schools by count'}
-              </div>
+              {tab === 'overall' && (
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                  {[
+                    { label: '300+ leads', points: '+40' },
+                    { label: '500+ phones', points: '+30' },
+                    { label: '1000+ emails', points: '+20' },
+                    { label: '100+ both', points: '+10' },
+                  ].map((c, i) => (
+                    <span key={i} style={{ fontSize: '11px', background: '#f5f6fa', border: '0.5px solid #e8eaf0', borderRadius: '4px', padding: '2px 8px', color: '#9094a8' }}>
+                      <span style={{ color: '#00c896', fontWeight: '600' }}>{c.points}</span> {c.label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {tab !== 'overall' && <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Top 10 schools by count</div>}
             </div>
           </div>
 
