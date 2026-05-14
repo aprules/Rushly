@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 const DASHBOARD_SECTIONS = [
   {
@@ -79,6 +80,28 @@ const DASHBOARD_SECTIONS = [
 
 export default function Dashboard({ session }) {
   const navigate = useNavigate();
+  const [stats, setStats] = useState({ leads: 0, schoolsDone: 0, schoolsWithUrl: 0, pendingReview: 0, noUrl: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const [leadsRes, doneRes, urlRes, reviewRes, noUrlRes] = await Promise.all([
+        supabase.from('leads').select('*', { count: 'exact', head: true }),
+        supabase.from('schools').select('*', { count: 'exact', head: true }).eq('status', 'done'),
+        supabase.from('schools').select('*', { count: 'exact', head: true }).not('campuslabs_url', 'is', null).neq('campuslabs_url', ''),
+        supabase.from('review').select('*', { count: 'exact', head: true }).eq('atm', false),
+        supabase.from('schools').select('*', { count: 'exact', head: true }).or('campuslabs_url.is.null,campuslabs_url.eq.'),
+      ]);
+      setStats({
+        leads: leadsRes.count || 0,
+        schoolsDone: doneRes.count || 0,
+        schoolsWithUrl: urlRes.count || 0,
+        pendingReview: reviewRes.count || 0,
+        noUrl: noUrlRes.count || 0,
+      });
+    };
+    fetchStats();
+  }, []);
+
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
@@ -93,6 +116,26 @@ export default function Dashboard({ session }) {
           <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Overview of all Rushly tools and modules</div>
         </div>
 
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
+          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #00c896', borderRadius: '8px', padding: '12px 14px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.leads.toLocaleString()}</div>
+            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Total leads</div>
+          </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #3b82f6', borderRadius: '8px', padding: '12px 14px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.schoolsDone} <span style={{ fontSize: '13px', color: '#9094a8', fontWeight: '400' }}>/ {stats.schoolsWithUrl}</span></div>
+            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Schools scraped</div>
+          </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #f59e0b', borderRadius: '8px', padding: '12px 14px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.pendingReview.toLocaleString()}</div>
+            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Pending review</div>
+          </div>
+          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #e05c5c', borderRadius: '8px', padding: '12px 14px' }}>
+            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.noUrl.toLocaleString()}</div>
+            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>No URL</div>
+          </div>
+        </div>
+
         {/* Sections */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
           {DASHBOARD_SECTIONS.map(section => (
@@ -102,7 +145,7 @@ export default function Dashboard({ session }) {
                 <div style={{ width: '3px', height: '18px', background: section.color, borderRadius: '2px' }} />
                 <div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>{section.label}</span>
-                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '8px' }}>{section.description}</span>
+                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '175px' }}>{section.description}</span>
                 </div>
               </div>
 
