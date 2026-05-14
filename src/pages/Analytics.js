@@ -140,15 +140,45 @@ export default function Analytics({ session }) {
           <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>School performance and lead data insights</div>
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards — dynamic per tab */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '12px', marginBottom: '24px' }}>
-          {[
+          {tab === 'overall' && [
             { label: 'Schools scored', value: summary.scored, color: '#405189' },
             { label: 'Average score', value: summary.avg, color: '#f59e0b' },
-            { label: 'High performers', value: summary.high, color: '#00c896', note: 'score 70+' },
+            { label: 'High performers (70+)', value: summary.high, color: '#00c896' },
           ].map((s, i) => (
             <div key={i} style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: `3px solid ${s.color}`, borderRadius: '8px', padding: '14px 16px' }}>
-              <div style={{ fontSize: '24px', fontWeight: '500', color: '#1a1d2e' }}>{s.value}{s.note && <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '6px' }}>{s.note}</span>}</div>
+              <div style={{ fontSize: '24px', fontWeight: '500', color: '#1a1d2e' }}>{s.value}</div>
+              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+          {tab === 'leads' && [
+            { label: 'Schools with leads', value: getSorted().length, color: '#405189' },
+            { label: 'Top school', value: getSorted()[0]?.name || '—', color: '#3b82f6', small: true },
+            { label: 'Most leads', value: getSorted()[0]?.total || 0, color: '#00c896' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: `3px solid ${s.color}`, borderRadius: '8px', padding: '14px 16px' }}>
+              <div style={{ fontSize: s.small ? '14px' : '24px', fontWeight: '500', color: '#1a1d2e' }}>{s.value}</div>
+              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+          {tab === 'phones' && [
+            { label: 'Schools with phones', value: getSorted().length, color: '#405189' },
+            { label: 'Top school', value: getSorted()[0]?.name || '—', color: '#3b82f6', small: true },
+            { label: 'Most phones', value: getSorted()[0]?.phones || 0, color: '#00c896' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: `3px solid ${s.color}`, borderRadius: '8px', padding: '14px 16px' }}>
+              <div style={{ fontSize: s.small ? '14px' : '24px', fontWeight: '500', color: '#1a1d2e' }}>{s.value}</div>
+              <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+          {tab === 'emails' && [
+            { label: 'Schools with emails', value: getSorted().length, color: '#405189' },
+            { label: 'Top school', value: getSorted()[0]?.name || '—', color: '#3b82f6', small: true },
+            { label: 'Most emails', value: getSorted()[0]?.emails || 0, color: '#00c896' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: `3px solid ${s.color}`, borderRadius: '8px', padding: '14px 16px' }}>
+              <div style={{ fontSize: s.small ? '14px' : '24px', fontWeight: '500', color: '#1a1d2e' }}>{s.value}</div>
               <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>{s.label}</div>
             </div>
           ))}
@@ -221,11 +251,28 @@ export default function Analytics({ session }) {
                   );
                 })}
 
-                {/* Bottom summary */}
+                {/* Bottom summary — dynamic per tab */}
                 <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #e8eaf0', display: 'flex', gap: '24px' }}>
-                  <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{summary.scored}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Schools scored</div></div>
-                  <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{summary.avg}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Avg score</div></div>
-                  <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#00c896' }}>{summary.high}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>High performers</div></div>
+                  {tab === 'overall' && <>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{summary.scored}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Schools scored</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{summary.avg}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Avg score</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#00c896' }}>{summary.high}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>High performers (70+)</div></div>
+                  </>}
+                  {tab === 'leads' && <>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows.length}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Schools with leads</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows[0]?.name || '—'}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Top school</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#405189' }}>{rows[0]?.total || 0}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Most leads</div></div>
+                  </>}
+                  {tab === 'phones' && <>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows.length}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Schools with phones</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows[0]?.name || '—'}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Top school</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#405189' }}>{rows[0]?.phones || 0}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Most phones</div></div>
+                  </>}
+                  {tab === 'emails' && <>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows.length}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Schools with emails</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#1a1d2e' }}>{rows[0]?.name || '—'}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Top school</div></div>
+                    <div><div style={{ fontSize: '18px', fontWeight: '500', color: '#405189' }}>{rows[0]?.emails || 0}</div><div style={{ fontSize: '11px', color: '#9094a8' }}>Most emails</div></div>
+                  </>}
                 </div>
               </>
             )}
