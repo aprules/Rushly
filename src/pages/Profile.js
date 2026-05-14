@@ -43,18 +43,21 @@ export default function Profile({ session }) {
   const [pwSaved, setPwSaved] = useState(false);
 
   const email = session?.user?.email || '';
-  const firstName = email.split('@')[0] || '';
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   // Load saved profile from user metadata
   useEffect(() => {
     const meta = session?.user?.user_metadata || {};
     if (meta.phone) setPhone(meta.phone);
     if (meta.timezone) setTimezone(meta.timezone);
+    if (meta.first_name) setFirstName(meta.first_name);
+    if (meta.last_name) setLastName(meta.last_name);
   }, [session]);
 
   const handleSaveGeneral = async () => {
     setSaving(true);
-    await supabase.auth.updateUser({ data: { phone, timezone } });
+    await supabase.auth.updateUser({ data: { phone, timezone, first_name: firstName, last_name: lastName } });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
@@ -135,11 +138,17 @@ export default function Profile({ session }) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                   <div>
                     <label style={labelStyle}>First Name</label>
-                    <input value={firstName} disabled style={{ ...inputStyle, background: '#f9fafb', color: '#9094a8', cursor: 'not-allowed' }} />
+                    <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First name" style={inputStyle}
+                      onFocus={e => { e.target.style.borderColor = '#405189'; e.target.style.boxShadow = '0 0 0 3px rgba(64,81,137,0.1)'; }}
+                      onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Last Name</label>
-                    <input value="" disabled placeholder="—" style={{ ...inputStyle, background: '#f9fafb', color: '#9094a8', cursor: 'not-allowed' }} />
+                    <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last name" style={inputStyle}
+                      onFocus={e => { e.target.style.borderColor = '#405189'; e.target.style.boxShadow = '0 0 0 3px rgba(64,81,137,0.1)'; }}
+                      onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
+                    />
                   </div>
                 </div>
 
