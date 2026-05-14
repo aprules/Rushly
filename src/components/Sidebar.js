@@ -280,6 +280,7 @@ export default function Sidebar({ session }) {
               {/* Menu items */}
               <div style={{ padding: '4px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: '#1a1d2e', cursor: 'pointer' }}
+                  onClick={() => { setProfileOpen(false); navigate('/profile'); }}
                   onMouseEnter={e => e.currentTarget.style.background = '#f5f6fa'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
