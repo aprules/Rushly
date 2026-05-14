@@ -42,19 +42,38 @@ export default function Analytics({ session }) {
       const { data } = await supabase.from('leads').select('company, email_address, phone_number');
       if (!data) { setLoading(false); return; }
 
+      // First pass: find all unique suffixes to identify school names
+      // School names are typically 2-5 words at the end of the company field
+      // We try suffix lengths 2-5 and pick the one that groups best
+      const suffixCounts = {};
+      data.forEach(r => {
+        const parts = (r.company || '').trim().split(' ');
+        for (let len = 2; len <= 5; len++) {
+          if (parts.length > len) {
+            const suffix = parts.slice(-len).join(' ');
+            suffixCounts[suffix] = (suffixCounts[suffix] || 0) + 1;
+          }
+        }
+      });
+      // A valid school name appears 3+ times
+      const validSchools = new Set(Object.entries(suffixCounts).filter(([, v]) => v >= 3).map(([k]) => k));
+
       const map = {};
       data.forEach(r => {
-        const company = r.company || '';
-        const parts = company.trim().split(' ');
-        if (parts.length < 2) return;
-        // Extract school name — last 2-4 words that match a known pattern
-        // Use the company field: "Org Name School Name" — school is everything after the org
-        // Best heuristic: last 3 words as school identifier
-        const school = parts.slice(-3).join(' ');
+        const parts = (r.company || '').trim().split(' ');
+        // Find the longest valid school suffix
+        let school = null;
+        for (let len = 5; len >= 2; len--) {
+          if (parts.length > len) {
+            const suffix = parts.slice(-len).join(' ');
+            if (validSchools.has(suffix)) { school = suffix; break; }
+          }
+        }
+        if (!school) return;
         if (!map[school]) map[school] = { name: school, total: 0, emails: 0, phones: 0, both: 0 };
         map[school].total++;
-        const hasEmail = r.email_address && r.email_address.trim() !== '';
-        const hasPhone = r.phone_number && r.phone_number.trim() !== '';
+        const hasEmail = !!(r.email_address && r.email_address.trim());
+        const hasPhone = !!(r.phone_number && r.phone_number.trim());
         if (hasEmail) map[school].emails++;
         if (hasPhone) map[school].phones++;
         if (hasEmail && hasPhone) map[school].both++;
@@ -142,21 +161,7 @@ export default function Analytics({ session }) {
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #e8eaf0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '15px', fontWeight: '600', color: '#1a1d2e' }}>School Performance</div>
-              {tab === 'overall' && (
-                <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                  {[
-                    { label: '300+ leads', points: '+40' },
-                    { label: '500+ phones', points: '+30' },
-                    { label: '1000+ emails', points: '+20' },
-                    { label: '100+ both', points: '+10' },
-                  ].map((c, i) => (
-                    <span key={i} style={{ fontSize: '11px', background: '#f5f6fa', border: '0.5px solid #e8eaf0', borderRadius: '4px', padding: '2px 8px', color: '#9094a8' }}>
-                      <span style={{ color: '#00c896', fontWeight: '600' }}>{c.points}</span> {c.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {tab !== 'overall' && <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Top 10 schools by count</div>}
+
             </div>
           </div>
 
