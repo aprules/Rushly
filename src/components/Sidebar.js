@@ -153,6 +153,14 @@ export default function Sidebar({ session }) {
         [data-theme="dark"] input { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
         [data-theme="dark"] select { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
 
+        /* Table row hover - dark mode fix */
+        [data-theme="dark"] tr:hover,
+        [data-theme="dark"] tr[style*="background: rgb(249, 250, 251)"],
+        [data-theme="dark"] tr[style*="background: #f9fafb"] {
+          background: #1e2235 !important;
+        }
+        [data-theme="dark"] tr:hover td { color: #e2e8f0 !important; }
+
         /* Expanded row background */
         [data-theme="dark"] td[style*="background: rgb(249, 250, 251)"],
         [data-theme="dark"] td[style*="background: #f9fafb"] { background: #1e2235 !important; }
