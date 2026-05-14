@@ -117,23 +117,32 @@ export default function Dashboard({ session }) {
         </div>
 
         {/* Stats */}
+        <style>{`
+          @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          .stat-card {
+            overflow: hidden;
+          }
+          .stat-card-inner {
+            animation: slideDown 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+          }
+        `}</style>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
-          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #00c896', borderRadius: '8px', padding: '12px 14px' }}>
-            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.leads.toLocaleString()}</div>
-            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Total leads</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #3b82f6', borderRadius: '8px', padding: '12px 14px' }}>
-            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.schoolsDone} <span style={{ fontSize: '13px', color: '#9094a8', fontWeight: '400' }}>/ {stats.schoolsWithUrl}</span></div>
-            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Schools scraped</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #f59e0b', borderRadius: '8px', padding: '12px 14px' }}>
-            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.pendingReview.toLocaleString()}</div>
-            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>Pending review</div>
-          </div>
-          <div style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: '3px solid #e05c5c', borderRadius: '8px', padding: '12px 14px' }}>
-            <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stats.noUrl.toLocaleString()}</div>
-            <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>No URL</div>
-          </div>
+          {[
+            { value: stats.leads.toLocaleString(), label: 'Total leads', color: '#00c896' },
+            { value: `${stats.schoolsDone} / ${stats.schoolsWithUrl}`, label: 'Schools scraped', color: '#3b82f6' },
+            { value: stats.pendingReview.toLocaleString(), label: 'Pending review', color: '#f59e0b' },
+            { value: stats.noUrl.toLocaleString(), label: 'No URL', color: '#e05c5c' },
+          ].map((stat, i) => (
+            <div key={i} className="stat-card" style={{ background: '#fff', border: '0.5px solid #e8eaf0', borderTop: `3px solid ${stat.color}`, borderRadius: '8px', padding: '12px 14px' }}>
+              <div className="stat-card-inner" style={{ animationDelay: `${i * 0.15}s` }}>
+                <div style={{ fontSize: '22px', fontWeight: '500', color: '#1a1d2e' }}>{stat.value}</div>
+                <div style={{ fontSize: '12px', color: '#9094a8', marginTop: '2px' }}>{stat.label}</div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Sections */}
