@@ -49,7 +49,6 @@ function DecogroAnimation({ running }) {
 }
 
 export default function Scraper({ session }) {
-  const navigate = useNavigate();
   const [schoolCount, setSchoolCount] = useState(1);
   const [schools, setSchools] = useState([
     { id: null, name: '', url: '' }, { id: null, name: '', url: '' }, { id: null, name: '', url: '' },

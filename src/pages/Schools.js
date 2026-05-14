@@ -169,7 +169,6 @@ export default function Schools({ session }) {
     return <span style={{ fontSize: '11px', color: '#9094a8', background: '#f5f6fa', padding: '3px 10px', borderRadius: '20px' }}>— Pending</span>;
   };
 
-  const currentPath = '/schools';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
