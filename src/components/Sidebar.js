@@ -49,7 +49,7 @@ export default function Sidebar({ session }) {
 
   return (
     <div style={{
-      width: 175px, height: '100vh', background: '#405189',
+      width: '175px', height: '100vh', background: '#405189',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
       position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10, overflowY: 'hidden',
       fontFamily: "'DM Sans', Segoe UI, sans-serif"
