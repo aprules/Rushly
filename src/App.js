@@ -7,7 +7,6 @@ import Scraper from './pages/Scraper';
 import Leads from './pages/Leads';
 import Review from './pages/Review';
 import Schools from './pages/Schools';
-import Profile from './pages/Profile';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -38,7 +37,6 @@ function App() {
       <Route path="/leads"     element={session ? <Leads session={session} /> : <Navigate to="/login" />} />
       <Route path="/review"    element={session ? <Review session={session} /> : <Navigate to="/login" />} />
       <Route path="/schools"   element={session ? <Schools session={session} /> : <Navigate to="/login" />} />
-      <Route path="/profile"   element={session ? <Profile session={session} /> : <Navigate to="/login" />} />
       <Route path="*"          element={<Navigate to={session ? "/dashboard" : "/login"} />} />
     </Routes>
   );
