@@ -104,7 +104,7 @@ export default function Dashboard({ session }) {
 
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }} className='rly-main'>
 
       {/* Sidebar */}
       <Sidebar session={session} />
@@ -154,7 +154,7 @@ export default function Dashboard({ session }) {
                 <div style={{ width: '3px', height: '18px', background: section.color, borderRadius: '2px' }} />
                 <div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>{section.label}</span>
-                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '175px' }}>{section.description}</span>
+                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '8px' }}>{section.description}</span>
                 </div>
               </div>
 

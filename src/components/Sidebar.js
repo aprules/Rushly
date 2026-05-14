@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import rushlyLogo from '../assets/rushly.png';
@@ -27,12 +27,27 @@ const PAGE_TITLES = {
   '/review': 'Review',
 };
 
+const DARK = {
+  bg: '#0f1117',
+  card: '#1a1d2e',
+  border: '#2d3148',
+  text: '#e2e8f0',
+  textSub: '#6b7280',
+  tableHeader: '#1e2235',
+  input: '#1a1d2e',
+};
+
+export { DARK };
+
 export default function Sidebar({ session }) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const [collapsed, setCollapsed] = useState({});
   const [dark, setDark] = useState(() => localStorage.getItem('rushly-dark') === 'true');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const title = PAGE_TITLES[currentPath] || 'Rushly';
@@ -40,19 +55,25 @@ export default function Sidebar({ session }) {
   }, [currentPath]);
 
   useEffect(() => {
-    if (dark) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+    document.body.setAttribute('data-theme', dark ? 'dark' : 'light');
     localStorage.setItem('rushly-dark', dark);
   }, [dark]);
 
-  // Apply on mount from saved preference
   useEffect(() => {
     if (localStorage.getItem('rushly-dark') === 'true') {
-      document.body.classList.add('dark');
+      document.body.setAttribute('data-theme', 'dark');
     }
+  }, []);
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handle = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
   }, []);
 
   const toggleSection = (label) => {
@@ -61,74 +82,95 @@ export default function Sidebar({ session }) {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
+  const W = sidebarOpen ? '175px' : '52px';
+
   return (
     <>
       <style>{`
-        body.dark { background: #0f1117 !important; color: #e2e8f0; }
-        body.dark .rushly-main { background: #0f1117 !important; }
-        body.dark .rushly-card { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
-        body.dark .rushly-text-primary { color: #e2e8f0 !important; }
-        body.dark .rushly-text-secondary { color: #6b7280 !important; }
-        body.dark .rushly-border { border-color: #2d3148 !important; }
-        body.dark .rushly-input { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
-        body.dark .rushly-table-header { background: #1a1d2e !important; }
-        body.dark .rushly-table-row:hover { background: #1e2235 !important; }
-        body.dark .rushly-pagination { background: #1a1d2e !important; }
+        [data-theme="dark"] { background-color: #0f1117; }
+        [data-theme="dark"] .rly-main { background: #0f1117 !important; }
+        [data-theme="dark"] .rly-card { background: #1a1d2e !important; border-color: #2d3148 !important; }
+        [data-theme="dark"] .rly-text { color: #e2e8f0 !important; }
+        [data-theme="dark"] .rly-subtext { color: #6b7280 !important; }
+        [data-theme="dark"] .rly-border { border-color: #2d3148 !important; }
+        [data-theme="dark"] .rly-input { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+        [data-theme="dark"] .rly-thead { background: #1e2235 !important; }
+        [data-theme="dark"] .rly-row:hover { background: #1e2235 !important; }
+        [data-theme="dark"] .rly-pagination { background: #1e2235 !important; }
+        [data-theme="dark"] .rly-select { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
       `}</style>
 
       <div style={{
-        width: '175px', height: '100vh', background: '#405189',
+        width: W, height: '100vh', background: '#405189',
         display: 'flex', flexDirection: 'column', flexShrink: 0,
         position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10,
-        overflowY: 'hidden', fontFamily: "'DM Sans', Segoe UI, sans-serif"
+        overflowY: 'hidden', overflowX: 'hidden',
+        transition: 'width 0.25s ease',
+        fontFamily: "'DM Sans', Segoe UI, sans-serif"
       }}>
-        {/* Logo */}
-        <div style={{ padding: '20px 16px 18px', borderBottom: '1px solid rgba(255,255,255,0.07)', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-          onClick={() => navigate('/dashboard')}>
-          <img src={rushlyLogo} alt="Rushly" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
+
+        {/* Logo + Hamburger */}
+        <div style={{ padding: '16px 12px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '64px' }}>
+          {sidebarOpen && (
+            <div style={{ cursor: 'pointer', flex: 1, display: 'flex', justifyContent: 'center' }} onClick={() => navigate('/dashboard')}>
+              <img src={rushlyLogo} alt="Rushly" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+            </div>
+          )}
+          <button onClick={() => setSidebarOpen(o => !o)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'rgba(255,255,255,0.6)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
         </div>
 
         {/* Nav */}
-        <div style={{ padding: '8px 10px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ padding: '8px 8px', flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
           {NAV_SECTIONS.map(section => {
             const isCollapsed = collapsed[section.label];
             const hasActive = section.items.some(i => i.path === currentPath);
             return (
               <div key={section.label} style={{ marginBottom: '6px' }}>
-                <div
-                  onClick={() => toggleSection(section.label)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 10px 5px', cursor: 'pointer', borderRadius: '5px' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700' }}>
-                    {section.label}
-                    {isCollapsed && hasActive && <span style={{ marginLeft: '4px', color: '#00c896' }}>•</span>}
-                  </span>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="2.5"
-                    style={{ transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', flexShrink: 0 }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
-                </div>
+                {sidebarOpen && (
+                  <div onClick={() => toggleSection(section.label)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 8px 4px', cursor: 'pointer', borderRadius: '5px' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700' }}>
+                      {section.label}
+                      {isCollapsed && hasActive && <span style={{ marginLeft: '4px', color: '#00c896' }}>•</span>}
+                    </span>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5"
+                      style={{ transition: 'transform 0.2s', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </div>
+                )}
 
-                {!isCollapsed && section.items.map(item => {
+                {(!isCollapsed || !sidebarOpen) && section.items.map(item => {
                   const isActive = item.path === currentPath;
                   return (
                     <div key={item.path} onClick={() => navigate(item.path)}
+                      title={!sidebarOpen ? item.label : ''}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '9px 12px', borderRadius: '6px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: sidebarOpen ? '10px' : '0',
+                        justifyContent: sidebarOpen ? 'flex-start' : 'center',
+                        padding: sidebarOpen ? '9px 10px' : '10px 0',
+                        borderRadius: '6px', cursor: 'pointer',
                         marginBottom: '2px', transition: 'all 0.15s',
                         color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
                         background: isActive ? 'rgba(0,200,150,0.2)' : 'transparent',
                         borderLeft: isActive ? '3px solid #00c896' : '3px solid transparent',
-                        fontSize: '15px', fontWeight: isActive ? '600' : '400',
+                        fontSize: '14px', fontWeight: isActive ? '600' : '400',
                       }}
                       onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = '#fff'; }}}
                       onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; }}}
                     >
                       <span style={{ opacity: isActive ? 1 : 0.7, flexShrink: 0 }}>{item.icon}</span>
-                      {item.label}
+                      {sidebarOpen && item.label}
                     </div>
                   );
                 })}
@@ -137,39 +179,79 @@ export default function Sidebar({ session }) {
           })}
         </div>
 
-        {/* Dark mode toggle + User */}
-        <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.12)' }}>
-
-          {/* Dark mode toggle */}
-          <button
-            onClick={() => setDark(d => !d)}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              width: '100%', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px', padding: '7px 10px', cursor: 'pointer', marginBottom: '10px'
-            }}
+        {/* User footer */}
+        <div style={{ padding: '10px 10px', borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.12)', position: 'relative' }} ref={profileRef}>
+          <div
+            onClick={() => setProfileOpen(o => !o)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '4px', borderRadius: '6px', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '12px', color: 'rgba(255,255,255,0.55)' }}>
-              {dark
-                ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              }
-              {dark ? 'Light mode' : 'Dark mode'}
-            </div>
-            {/* Toggle pill */}
-            <div style={{ width: '28px', height: '16px', background: dark ? '#00c896' : 'rgba(255,255,255,0.15)', borderRadius: '8px', position: 'relative', transition: 'background 0.2s' }}>
-              <div style={{ width: '12px', height: '12px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: dark ? '14px' : '2px', transition: 'left 0.2s' }} />
-            </div>
-          </button>
-
-          {/* User */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#00c896', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>
               {session?.user?.email?.[0]?.toUpperCase() || 'U'}
             </div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session?.user?.email || ''}</div>
+            {sidebarOpen && (
+              <>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{session?.user?.email || ''}</div>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </>
+            )}
           </div>
-          <button onClick={handleLogout} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '5px', padding: '6px 10px', fontSize: '13px', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', width: '100%', textAlign: 'left' }}>Sign out</button>
+
+          {/* Profile dropdown */}
+          {profileOpen && (
+            <div style={{
+              position: 'absolute', bottom: '54px', left: '10px', right: '10px',
+              background: '#fff', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              overflow: 'hidden', zIndex: 100
+            }}>
+              {/* User info header */}
+              <div style={{ padding: '12px 14px', borderBottom: '1px solid #f0f1f5', background: '#f9fafb' }}>
+                <div style={{ fontWeight: '600', fontSize: '13px', color: '#1a1d2e' }}>{session?.user?.email?.split('@')[0] || 'User'}</div>
+                <div style={{ fontSize: '11px', color: '#9094a8', marginTop: '2px' }}>Admin</div>
+              </div>
+
+              {/* Menu items */}
+              <div style={{ padding: '4px 0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: '#1a1d2e', cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f5f6fa'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  Profile
+                </div>
+
+                {/* Dark mode toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 14px', fontSize: '13px', color: '#1a1d2e', cursor: 'pointer' }}
+                  onClick={() => setDark(d => !d)}
+                  onMouseEnter={e => e.currentTarget.style.background = '#f5f6fa'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {dark
+                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    }
+                    {dark ? 'Light mode' : 'Dark mode'}
+                  </div>
+                  <div style={{ width: '28px', height: '16px', background: dark ? '#00c896' : '#e8eaf0', borderRadius: '8px', position: 'relative', transition: 'background 0.2s' }}>
+                    <div style={{ width: '12px', height: '12px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', left: dark ? '14px' : '2px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                  </div>
+                </div>
+
+                <div style={{ height: '1px', background: '#f0f1f5', margin: '2px 0' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 14px', fontSize: '13px', color: '#e05c5c', cursor: 'pointer' }}
+                  onClick={handleLogout}
+                  onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                  Logout
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

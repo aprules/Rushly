@@ -171,7 +171,7 @@ export default function Schools({ session }) {
 
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }} className='rly-main'>
 
       {/* Sidebar */}
       <Sidebar session={session} />
@@ -292,11 +292,11 @@ export default function Schools({ session }) {
         )}
 
         {/* Table */}
-        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }} className='rly-card rly-border'>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
+                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }} className='rly-thead rly-border'>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>#</th>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>School Name</th>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px' }}>CampusLabs URL</th>

@@ -90,7 +90,7 @@ export default function Leads({ session }) {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }} className='rly-main'>
 
       {/* Sidebar */}
       <Sidebar session={session} />
@@ -173,11 +173,11 @@ export default function Leads({ session }) {
         </div>
 
         {/* Table */}
-        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }} className='rly-card rly-border'>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
+                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }} className='rly-thead rly-border'>
                   {[
                     { label: 'First Name', col: 'first_name' },
                     { label: 'Last Name', col: 'last_name' },
