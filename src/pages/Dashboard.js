@@ -126,7 +126,7 @@ function StatCards({ stats, cardIndex, setCardIndex }) {
       }, 10000 + i * 500)
     );
     return () => timers.forEach(clearInterval);
-  }, []);
+  }, [setCardIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '10px', marginBottom: '28px' }}>
