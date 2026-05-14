@@ -273,7 +273,9 @@ export default function Sidebar({ session }) {
             }}>
               {/* User info header */}
               <div style={{ padding: '12px 14px', borderBottom: '1px solid #f0f1f5', background: '#f9fafb' }}>
-                <div style={{ fontWeight: '600', fontSize: '13px', color: '#1a1d2e' }}>{session?.user?.email?.split('@')[0] || 'User'}</div>
+                <div style={{ fontWeight: '600', fontSize: '13px', color: '#1a1d2e' }}>
+                {[session?.user?.user_metadata?.first_name, session?.user?.user_metadata?.last_name].filter(Boolean).join(' ') || session?.user?.email?.split('@')[0] || 'User'}
+              </div>
                 <div style={{ fontSize: '11px', color: '#9094a8', marginTop: '2px' }}>Admin</div>
               </div>
 
