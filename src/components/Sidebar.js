@@ -87,27 +87,23 @@ export default function Sidebar({ session }) {
   return (
     <>
       <style>{`
-        [data-theme="dark"] body,
-        [data-theme="dark"] { background-color: #0f1117 !important; }
-        
-        /* All divs/sections with light backgrounds */
-        [data-theme="dark"] div { 
-          color: inherit; 
-        }
-        
         /* Page backgrounds */
         [data-theme="dark"] div[style*="background: rgb(245, 246, 250)"],
         [data-theme="dark"] div[style*="background: #f5f6fa"] {
           background: #0f1117 !important;
         }
         
-        /* White cards and containers */
+        /* White cards */
         [data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
-        [data-theme="dark"] div[style*="background: #fff"],
-        [data-theme="dark"] div[style*="background: white"] {
+        [data-theme="dark"] div[style*="background: #fff"] {
           background: #1a1d2e !important;
-          border-color: #2d3148 !important;
         }
+
+        /* Stat cards - preserve colored top border */
+        [data-theme="dark"] div[style*="border-top: 3px solid #00c896"] { background: #1a1d2e !important; border-color: #2d3148 !important; border-top-color: #00c896 !important; }
+        [data-theme="dark"] div[style*="border-top: 3px solid #3b82f6"] { background: #1a1d2e !important; border-color: #2d3148 !important; border-top-color: #3b82f6 !important; }
+        [data-theme="dark"] div[style*="border-top: 3px solid #f59e0b"] { background: #1a1d2e !important; border-color: #2d3148 !important; border-top-color: #f59e0b !important; }
+        [data-theme="dark"] div[style*="border-top: 3px solid #e05c5c"] { background: #1a1d2e !important; border-color: #2d3148 !important; border-top-color: #e05c5c !important; }
         
         /* Table headers */
         [data-theme="dark"] tr[style*="background: rgb(245, 246, 250)"],
@@ -115,53 +111,51 @@ export default function Sidebar({ session }) {
           background: #1e2235 !important;
         }
         
-        /* Pagination and footers */
+        /* Pagination */
         [data-theme="dark"] div[style*="background: rgb(249, 250, 251)"],
         [data-theme="dark"] div[style*="background: #f9fafb"] {
           background: #1e2235 !important;
         }
         
-        /* Dark text → light */
+        /* Text colors */
         [data-theme="dark"] *[style*="color: rgb(26, 29, 46)"],
-        [data-theme="dark"] *[style*="color: #1a1d2e"] {
-          color: #e2e8f0 !important;
-        }
+        [data-theme="dark"] *[style*="color: #1a1d2e"] { color: #e2e8f0 !important; }
         
-        /* Secondary text */
         [data-theme="dark"] *[style*="color: rgb(144, 148, 168)"],
-        [data-theme="dark"] *[style*="color: #9094a8"] {
-          color: #6b7280 !important;
+        [data-theme="dark"] *[style*="color: #9094a8"] { color: #8892a4 !important; }
+
+        /* Table row borders - subtle */
+        [data-theme="dark"] tr[style*="border-bottom: 1px solid rgb(240, 241, 245)"],
+        [data-theme="dark"] tr[style*="border-bottom: 1px solid #f0f1f5"] {
+          border-bottom-color: #232640 !important;
         }
-        
-        /* Borders */
-        [data-theme="dark"] *[style*="border: 1px solid rgb(232, 234, 240)"],
-        [data-theme="dark"] *[style*="border: 1px solid #e8eaf0"],
-        [data-theme="dark"] *[style*="border-color: #e8eaf0"] {
+
+        /* Card borders */
+        [data-theme="dark"] div[style*="border: 1px solid rgb(232, 234, 240)"],
+        [data-theme="dark"] div[style*="border: 1px solid #e8eaf0"] {
           border-color: #2d3148 !important;
         }
-        
-        /* Inputs */
-        [data-theme="dark"] input,
-        [data-theme="dark"] select {
-          background: #1a1d2e !important;
+
+        [data-theme="dark"] div[style*="border: 0.5px solid #e8eaf0"],
+        [data-theme="dark"] div[style*="border: 0.5px solid rgb(232, 234, 240)"] {
           border-color: #2d3148 !important;
+        }
+
+        /* Buttons in tables */
+        [data-theme="dark"] button[style*="background: rgb(255, 255, 255)"],
+        [data-theme="dark"] button[style*="background: #fff"] {
+          background: #2a2f52 !important;
+          border-color: #3d4470 !important;
           color: #e2e8f0 !important;
         }
-        
-        /* Table rows hover */
-        [data-theme="dark"] tr:hover td {
-          background: #1e2235 !important;
-        }
 
-        /* Stat cards */
-        [data-theme="dark"] div[style*="border-top: 3px solid"] {
-          background: #1a1d2e !important;
-        }
+        /* Inputs and selects */
+        [data-theme="dark"] input { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+        [data-theme="dark"] select { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
 
-        /* Dashboard module cards */
-        [data-theme="dark"] div[style*="borderRadius: '12px'"] {
-          background: #1a1d2e !important;
-        }
+        /* Expanded row background */
+        [data-theme="dark"] td[style*="background: rgb(249, 250, 251)"],
+        [data-theme="dark"] td[style*="background: #f9fafb"] { background: #1e2235 !important; }
       `}</style>
 
       <div style={{
