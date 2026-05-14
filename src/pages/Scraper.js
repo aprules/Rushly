@@ -252,7 +252,7 @@ export default function Scraper({ session }) {
   const selectedIds = schools.slice(0, schoolCount).map(s => s.id).filter(Boolean);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }} className='rly-main'>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
 
       {/* Sidebar */}
       <Sidebar session={session} />

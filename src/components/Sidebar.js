@@ -87,17 +87,81 @@ export default function Sidebar({ session }) {
   return (
     <>
       <style>{`
-        [data-theme="dark"] { background-color: #0f1117; }
-        [data-theme="dark"] .rly-main { background: #0f1117 !important; }
-        [data-theme="dark"] .rly-card { background: #1a1d2e !important; border-color: #2d3148 !important; }
-        [data-theme="dark"] .rly-text { color: #e2e8f0 !important; }
-        [data-theme="dark"] .rly-subtext { color: #6b7280 !important; }
-        [data-theme="dark"] .rly-border { border-color: #2d3148 !important; }
-        [data-theme="dark"] .rly-input { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
-        [data-theme="dark"] .rly-thead { background: #1e2235 !important; }
-        [data-theme="dark"] .rly-row:hover { background: #1e2235 !important; }
-        [data-theme="dark"] .rly-pagination { background: #1e2235 !important; }
-        [data-theme="dark"] .rly-select { background: #1a1d2e !important; border-color: #2d3148 !important; color: #e2e8f0 !important; }
+        [data-theme="dark"] body,
+        [data-theme="dark"] { background-color: #0f1117 !important; }
+        
+        /* All divs/sections with light backgrounds */
+        [data-theme="dark"] div { 
+          color: inherit; 
+        }
+        
+        /* Page backgrounds */
+        [data-theme="dark"] div[style*="background: rgb(245, 246, 250)"],
+        [data-theme="dark"] div[style*="background: #f5f6fa"] {
+          background: #0f1117 !important;
+        }
+        
+        /* White cards and containers */
+        [data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
+        [data-theme="dark"] div[style*="background: #fff"],
+        [data-theme="dark"] div[style*="background: white"] {
+          background: #1a1d2e !important;
+          border-color: #2d3148 !important;
+        }
+        
+        /* Table headers */
+        [data-theme="dark"] tr[style*="background: rgb(245, 246, 250)"],
+        [data-theme="dark"] tr[style*="background: #f5f6fa"] {
+          background: #1e2235 !important;
+        }
+        
+        /* Pagination and footers */
+        [data-theme="dark"] div[style*="background: rgb(249, 250, 251)"],
+        [data-theme="dark"] div[style*="background: #f9fafb"] {
+          background: #1e2235 !important;
+        }
+        
+        /* Dark text → light */
+        [data-theme="dark"] *[style*="color: rgb(26, 29, 46)"],
+        [data-theme="dark"] *[style*="color: #1a1d2e"] {
+          color: #e2e8f0 !important;
+        }
+        
+        /* Secondary text */
+        [data-theme="dark"] *[style*="color: rgb(144, 148, 168)"],
+        [data-theme="dark"] *[style*="color: #9094a8"] {
+          color: #6b7280 !important;
+        }
+        
+        /* Borders */
+        [data-theme="dark"] *[style*="border: 1px solid rgb(232, 234, 240)"],
+        [data-theme="dark"] *[style*="border: 1px solid #e8eaf0"],
+        [data-theme="dark"] *[style*="border-color: #e8eaf0"] {
+          border-color: #2d3148 !important;
+        }
+        
+        /* Inputs */
+        [data-theme="dark"] input,
+        [data-theme="dark"] select {
+          background: #1a1d2e !important;
+          border-color: #2d3148 !important;
+          color: #e2e8f0 !important;
+        }
+        
+        /* Table rows hover */
+        [data-theme="dark"] tr:hover td {
+          background: #1e2235 !important;
+        }
+
+        /* Stat cards */
+        [data-theme="dark"] div[style*="border-top: 3px solid"] {
+          background: #1a1d2e !important;
+        }
+
+        /* Dashboard module cards */
+        [data-theme="dark"] div[style*="borderRadius: '12px'"] {
+          background: #1a1d2e !important;
+        }
       `}</style>
 
       <div style={{

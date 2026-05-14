@@ -90,7 +90,7 @@ export default function Review({ session }) {
 
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }} className='rly-main'>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
       <Sidebar session={session} />
 
       <div style={{ marginLeft: '175px', flex: 1, padding: '32px', minWidth: 0 }}>
@@ -120,11 +120,11 @@ export default function Review({ session }) {
           )}
         </div>
 
-        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }} className='rly-card rly-border'>
+        <div style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }} className='rly-thead rly-border'>
+                <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
                   {['', 'Company', 'Organization', 'School', 'Add to Masterlist'].map((label, i) => (
                     <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px', whiteSpace: 'nowrap' }}>{label}</th>
                   ))}
