@@ -27,15 +27,12 @@ const PAGE_TITLES = {
   '/review': 'Review',
 };
 
-export const 175px = '175px';
-
 export default function Sidebar({ session }) {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
   const [collapsed, setCollapsed] = useState({});
 
-  // Update browser tab title
   useEffect(() => {
     const title = PAGE_TITLES[currentPath] || 'Rushly';
     document.title = `${title} | Rushly`;
@@ -49,9 +46,18 @@ export default function Sidebar({ session }) {
 
   return (
     <div style={{
-      width: '175px', height: '100vh', background: '#405189',
-      display: 'flex', flexDirection: 'column', flexShrink: 0,
-      position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 10, overflowY: 'hidden',
+      width: '175px',
+      height: '100vh',
+      background: '#405189',
+      display: 'flex',
+      flexDirection: 'column',
+      flexShrink: 0,
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      bottom: 0,
+      zIndex: 10,
+      overflowY: 'hidden',
       fontFamily: "'DM Sans', Segoe UI, sans-serif"
     }}>
       {/* Logo */}
