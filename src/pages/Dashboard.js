@@ -1,7 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
 
 const DASHBOARD_SECTIONS = [
   {
@@ -103,7 +102,7 @@ export default function Dashboard({ session }) {
                 <div style={{ width: '3px', height: '18px', background: section.color, borderRadius: '2px' }} />
                 <div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>{section.label}</span>
-                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '175px' }}>{section.description}</span>
+                  <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '8px' }}>{section.description}</span>
                 </div>
               </div>
 

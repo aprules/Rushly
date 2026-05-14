@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
 export default function Review({ session }) {
-  const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -100,7 +98,7 @@ export default function Review({ session }) {
           <div>
             <div style={{ fontSize: '20px', fontWeight: '700', color: '#1a1d2e', letterSpacing: '-0.3px' }}>
               Review
-              {rows.length > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '175px' }}>({rows.length.toLocaleString()})</span>}
+              {rows.length > 0 && <span style={{ fontSize: '13px', fontWeight: '500', color: '#9094a8', marginLeft: '10px' }}>({rows.length.toLocaleString()})</span>}
             </div>
             <div style={{ fontSize: '13px', color: '#9094a8', marginTop: '2px' }}>Click a row to edit — changes sync to Leads and Companies</div>
           </div>
