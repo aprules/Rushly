@@ -127,13 +127,15 @@ export default function Scraper({ session }) {
       // Insert scrape complete notification
       const schoolNames = completedSchools.map(s => s.name).join(', ');
       const count = completedSchools.length;
-      await supabase.from('notifications').insert({
-        title: `Scrape complete`,
-        message: `${count} school${count > 1 ? 's' : ''} scraped: ${schoolNames}`,
-        type: 'scrape_done',
-        read: false,
-        created_at: new Date().toISOString(),
-      }).catch(() => {});
+      try {
+        await supabase.from('notifications').insert({
+          title: `Scrape complete`,
+          message: `${count} school${count > 1 ? 's' : ''} scraped: ${schoolNames}`,
+          type: 'scrape_done',
+          read: false,
+          created_at: new Date().toISOString(),
+        });
+      } catch(e) {}
     }
     setRunning(false);
     setDone(true);
@@ -202,7 +204,6 @@ export default function Scraper({ session }) {
         // Track done by name — immune to DELETE+POST gap where row temporarily disappears
         const doneSchoolNames = new Set(schoolLatest.filter(r => r.done).map(r => r.school_name));
         const allDone = activeSchools.every(s => doneSchoolNames.has(s.name));
-        console.log('[poll] doneNames:', [...doneSchoolNames], 'activeSchools:', activeSchools.map(s => s.name), 'allDone:', allDone);
         if (allDone && expectedSchools > 0) finishScrape(activeSchools);
       } catch(e) {}
     }, 1000);
