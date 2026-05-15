@@ -66,6 +66,71 @@ export default function Scraper({ session }) {
   const activeSchoolsCountRef = useRef(0);
   const lastActivityRef = useRef(Date.now());
 
+  // ─── OPTION 1: Warn before leaving while scraping ───
+  useEffect(() => {
+    const handle = (e) => {
+      if (running) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handle);
+    return () => window.removeEventListener('beforeunload', handle);
+  }, [running]);
+
+  // ─── OPTION 2: Reconnect after refresh ───
+  useEffect(() => {
+    const tryReconnect = async () => {
+      try {
+        // Check for any in-progress session rows that aren't all done
+        const { data } = await supabase
+          .from('scrape_progress')
+          .select('*')
+          .neq('school_name', '__status__')
+          .order('id', { ascending: false })
+          .limit(20);
+
+        if (!data || data.length === 0) return;
+
+        // Get latest row per school
+        const latest = {};
+        for (const row of data) {
+          if (!latest[row.school_name] || row.id > latest[row.school_name].id) latest[row.school_name] = row;
+        }
+
+        const rows = Object.values(latest);
+        const allDone = rows.every(r => r.done);
+        if (allDone) return; // scrape already finished, nothing to reconnect
+
+        // There's an active session — reconnect to it
+        const sessionId = rows[0].session_id;
+        if (!sessionId) return;
+
+        // Rebuild activeSchools from scrape_progress school names
+        const { data: schoolData } = await supabase
+          .from('schools')
+          .select('id, name, campuslabs_url')
+          .in('name', rows.map(r => r.school_name));
+
+        if (!schoolData || schoolData.length === 0) return;
+
+        const activeSchools = schoolData.map(s => ({ id: s.id, name: s.name, url: s.campuslabs_url }));
+
+        sessionIdRef.current = sessionId;
+        activeSchoolsCountRef.current = activeSchools.length;
+        setRunning(true);
+        setStatus('Reconnecting to active scrape...');
+
+        // Restore existing logs
+        const logs = {};
+        for (const row of rows) {
+          logs[row.school_name] = { orgs: row.scraped, total: row.total_orgs, emails: row.emails, phones: row.phones, matched: row.matched, time: row.time_taken || '', done: row.done };
+        }
+        setSchoolLogs(logs);
+
+        startPolling(sessionId, activeSchools);
+      } catch(e) {}
+    };
+    tryReconnect();
+  }, [startPolling]);
+
   // Load pending/in_progress schools with URLs from Supabase
   useEffect(() => {
     const load = async () => {
