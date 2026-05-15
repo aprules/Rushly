@@ -19,6 +19,7 @@ const NAV_SECTIONS = [
   ]},
   { label: 'Analytics', items: [
     { label: 'Performance', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>, path: '/analytics' },
+    { label: 'Scrape History', icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, path: '/scrape-history' },
   ]},
 ];
 
@@ -29,6 +30,7 @@ const PAGE_TITLES = {
   '/leads': 'Leads',
   '/review': 'Review',
   '/analytics': 'Analytics',
+  '/scrape-history': 'Scrape History',
 };
 
 const DARK = {
@@ -51,6 +53,7 @@ export default function Sidebar({ session }) {
   const [dark, setDark] = useState(() => localStorage.getItem('rushly-dark') === 'true');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -67,6 +70,17 @@ export default function Sidebar({ session }) {
     if (localStorage.getItem('rushly-dark') === 'true') {
       document.body.setAttribute('data-theme', 'dark');
     }
+  }, []);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
+      setNotifCount(count || 0);
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Close profile dropdown on outside click
