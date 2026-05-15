@@ -198,8 +198,11 @@ export default function Scraper({ session }) {
 
         const schoolLatest = Object.values(latest).filter(r => r.school_name !== '__status__');
         const expectedSchools = activeSchoolsCountRef.current || 1;
-        const allDone = schoolLatest.length >= expectedSchools && schoolLatest.every(r => r.done);
-        if (allDone) finishScrape(activeSchools);
+
+        // Track done by name — immune to DELETE+POST gap where row temporarily disappears
+        const doneSchoolNames = new Set(schoolLatest.filter(r => r.done).map(r => r.school_name));
+        const allDone = activeSchools.every(s => doneSchoolNames.has(s.name));
+        if (allDone && expectedSchools > 0) finishScrape(activeSchools);
       } catch(e) {}
     }, 1000);
   }, [finishScrape]);
