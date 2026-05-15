@@ -229,7 +229,36 @@ export default function Scraper({ session }) {
           .order('id', { ascending: false })
           .limit(20);
 
-        if (!data || data.length === 0) return;
+        // Fallback — check for in_progress schools if scrape_progress is empty (DELETE gap)
+        const { data: inProgressSchools } = await supabase
+          .from('schools')
+          .select('id, name, campuslabs_url, status')
+          .eq('status', 'in_progress');
+
+        const hasInProgress = inProgressSchools && inProgressSchools.length > 0;
+
+        if (!data || data.length === 0) {
+          // No scrape_progress rows but schools are in_progress — scrape is running, just reconnect polling
+          if (hasInProgress) {
+            const activeSchools = inProgressSchools.map(s => ({ id: s.id, name: s.name, url: s.campuslabs_url }));
+            // Wait 1s for scrape_progress rows to appear then start polling
+            await new Promise(r => setTimeout(r, 1500));
+            const { data: freshData } = await supabase
+              .from('scrape_progress')
+              .select('session_id')
+              .neq('school_name', '__status__')
+              .order('id', { ascending: false })
+              .limit(1);
+            if (!freshData || freshData.length === 0) return;
+            const sessionId = freshData[0].session_id;
+            sessionIdRef.current = sessionId;
+            activeSchoolsCountRef.current = activeSchools.length;
+            setRunning(true);
+            setStatus('Reconnecting to active scrape...');
+            startPolling(sessionId, activeSchools);
+          }
+          return;
+        }
 
         const latest = {};
         for (const row of data) {
@@ -238,7 +267,7 @@ export default function Scraper({ session }) {
 
         const rows = Object.values(latest);
         const allDone = rows.every(r => r.done);
-        if (allDone) return;
+        if (allDone && !hasInProgress) return;
 
         // Only reconnect if scrape started within the last 2 hours
         const mostRecent = Math.max(...rows.map(r => new Date(r.created_at).getTime()));
