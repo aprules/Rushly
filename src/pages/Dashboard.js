@@ -73,6 +73,7 @@ export default function Dashboard({ session }) {
 
   const getStatusStyle = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.planned;
 
+  const activeRoadmap = roadmap.filter(c => c.status === 'active');
   const comingSoon = roadmap.filter(c => c.status === 'coming_soon');
   const planned = roadmap.filter(c => c.status === 'planned');
 
@@ -114,6 +115,33 @@ export default function Dashboard({ session }) {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          ))}
+
+          {/* Active roadmap cards — promoted from Supabase */}
+          {activeRoadmap.length > 0 && activeRoadmap.map(card => (
+            <div key={card.id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ width: '3px', height: '18px', background: '#00c896', borderRadius: '2px' }} />
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>{card.section_label || 'Tools'}</span>
+                <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '4px' }}>{card.section_description || ''}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxWidth: '900px' }}>
+                <div
+                  onClick={() => card.path && navigate(card.path)}
+                  style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '20px', cursor: card.path ? 'pointer' : 'default', transition: 'box-shadow 0.15s, border-color 0.15s' }}
+                  onMouseEnter={e => { if (card.path) { e.currentTarget.style.boxShadow = '0 4px 20px #00c89620'; e.currentTarget.style.borderColor = '#00c896'; }}}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = '#e8eaf0'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ width: '38px', height: '38px', background: '#e8faf5', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{card.icon_emoji || '✅'}</div>
+                    <span style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '20px', background: '#e8faf5', color: '#00c896', letterSpacing: '0.3px' }}>Active</span>
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e', marginBottom: '5px' }}>{card.title}</div>
+                  <div style={{ fontSize: '12px', color: '#9094a8', lineHeight: '1.6', marginBottom: '14px' }}>{card.description}</div>
+                  {card.path && <div style={{ fontSize: '12px', color: '#00c896', fontWeight: '600' }}>Open →</div>}
+                </div>
               </div>
             </div>
           ))}
