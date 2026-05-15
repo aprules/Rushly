@@ -123,6 +123,17 @@ export default function Scraper({ session }) {
           .order('name', { ascending: true });
         setAvailableSchools(data || []);
       }
+
+      // Insert scrape complete notification
+      const schoolNames = completedSchools.map(s => s.name).join(', ');
+      const count = completedSchools.length;
+      await supabase.from('notifications').insert({
+        title: `Scrape complete`,
+        message: `${count} school${count > 1 ? 's' : ''} scraped: ${schoolNames}`,
+        type: 'scrape_done',
+        read: false,
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
     }
     setRunning(false);
     setDone(true);
