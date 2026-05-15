@@ -240,8 +240,14 @@ export default function Scraper({ session }) {
         const allDone = rows.every(r => r.done);
         if (allDone) return;
 
+        // Only reconnect if scrape started within the last 2 hours
+        const mostRecent = Math.max(...rows.map(r => new Date(r.created_at).getTime()));
+        if (Date.now() - mostRecent > 2 * 60 * 60 * 1000) return;
+
+        // All rows must belong to the same session
         const sessionId = rows[0].session_id;
         if (!sessionId) return;
+        if (!rows.every(r => r.session_id === sessionId)) return;
 
         const { data: schoolData } = await supabase
           .from('schools')
