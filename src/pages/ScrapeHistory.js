@@ -41,7 +41,7 @@ export default function ScrapeHistory({ session }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f5f6fa', borderBottom: '1px solid #e8eaf0' }}>
-                  {['Date', 'School', 'Status', 'Time'].map(h => (
+                  {['Date', 'School', 'Orgs Scraped', 'Scrape Duration'].map(h => (
                     <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontWeight: '600', color: '#1a1d2e', fontSize: '12px', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
@@ -58,9 +58,7 @@ export default function ScrapeHistory({ session }) {
                   >
                     <td style={{ padding: '10px 16px', color: '#9094a8', whiteSpace: 'nowrap' }}>{formatDate(log.created_at)}</td>
                     <td style={{ padding: '10px 16px', color: '#1a1d2e', fontWeight: '500' }}>{log.school_name || '—'}</td>
-                    <td style={{ padding: '10px 16px' }}>
-                      <span style={{ fontSize: '13px', color: '#405189', fontWeight: '500' }}>{log.status || '—'}</span>
-                    </td>
+                    <td style={{ padding: '10px 16px', color: '#1a1d2e' }}>{log.scraped != null ? `${log.scraped} orgs` : '—'}</td>
                     <td style={{ padding: '10px 16px', color: '#00c896', fontWeight: '600', whiteSpace: 'nowrap' }}>{log.time_taken || '—'}</td>
                   </tr>
                 ))}
