@@ -222,41 +222,46 @@ export default function Scraper({ session }) {
   useEffect(() => {
     const tryReconnect = async () => {
       try {
-        const { data } = await supabase
-          .from('scrape_progress')
-          .select('*')
-          .neq('school_name', '__status__')
-          .order('id', { ascending: false })
-          .limit(20);
+        // Retry up to 5 times with 1s delay — handles DELETE gap on page load
+        let data = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const { data: d } = await supabase
+            .from('scrape_progress')
+            .select('*')
+            .neq('school_name', '__status__')
+            .order('id', { ascending: false })
+            .limit(20);
+          if (d && d.length > 0) { data = d; break; }
+          await new Promise(r => setTimeout(r, 1000));
+        }
 
-        // Fallback — check for in_progress schools if scrape_progress is empty (DELETE gap)
+        // Also check for in_progress schools as signal scrape is running
         const { data: inProgressSchools } = await supabase
           .from('schools')
-          .select('id, name, campuslabs_url, status')
+          .select('id, name, campuslabs_url')
           .eq('status', 'in_progress');
 
         const hasInProgress = inProgressSchools && inProgressSchools.length > 0;
 
         if (!data || data.length === 0) {
-          // No scrape_progress rows but schools are in_progress — scrape is running, just reconnect polling
-          if (hasInProgress) {
-            const activeSchools = inProgressSchools.map(s => ({ id: s.id, name: s.name, url: s.campuslabs_url }));
-            // Wait 1s for scrape_progress rows to appear then start polling
-            await new Promise(r => setTimeout(r, 1500));
-            const { data: freshData } = await supabase
-              .from('scrape_progress')
-              .select('session_id')
-              .neq('school_name', '__status__')
-              .order('id', { ascending: false })
-              .limit(1);
-            if (!freshData || freshData.length === 0) return;
-            const sessionId = freshData[0].session_id;
-            sessionIdRef.current = sessionId;
-            activeSchoolsCountRef.current = activeSchools.length;
-            setRunning(true);
-            setStatus('Reconnecting to active scrape...');
-            startPolling(sessionId, activeSchools);
-          }
+          if (!hasInProgress) return;
+          // Schools are in_progress but no progress rows yet — reconnect with polling only
+          const activeSchools = inProgressSchools.map(s => ({ id: s.id, name: s.name, url: s.campuslabs_url }));
+          // Wait for first progress row to get session ID
+          await new Promise(r => setTimeout(r, 2000));
+          const { data: freshData } = await supabase
+            .from('scrape_progress')
+            .select('session_id')
+            .neq('school_name', '__status__')
+            .order('id', { ascending: false })
+            .limit(1);
+          if (!freshData || freshData.length === 0) return;
+          const sessionId = freshData[0].session_id;
+          sessionIdRef.current = sessionId;
+          activeSchoolsCountRef.current = activeSchools.length;
+          setRunning(true);
+          setStatus('Reconnecting to active scrape...');
+          startPolling(sessionId, activeSchools);
           return;
         }
 
