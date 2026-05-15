@@ -72,11 +72,12 @@ export default function Sidebar({ session }) {
     }
   }, []);
 
-  // Fetch unread notification count
   useEffect(() => {
     const fetchNotifs = async () => {
-      const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
-      setNotifCount(count || 0);
+      try {
+        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
+        setNotifCount(count || 0);
+      } catch(e) {}
     };
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 30000);
