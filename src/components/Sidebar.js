@@ -53,7 +53,7 @@ export default function Sidebar({ session }) {
   const [dark, setDark] = useState(() => localStorage.getItem('rushly-dark') === 'true');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifCount, setNotifCount] = useState(0);
+
   const profileRef = useRef(null);
 
   useEffect(() => {
