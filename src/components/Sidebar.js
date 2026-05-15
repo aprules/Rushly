@@ -79,9 +79,9 @@ export default function Sidebar({ session }) {
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
-        const { data, count } = await supabase
+        const { data } = await supabase
           .from('notifications')
-          .select('*', { count: 'exact' })
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(20);
         setNotifs(data || []);
