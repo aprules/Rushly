@@ -84,13 +84,21 @@ export default function Sidebar({ session }) {
           .select('*', { count: 'exact' })
           .order('created_at', { ascending: false })
           .limit(20);
-        setNotifCount(count || 0);
         setNotifs(data || []);
+        setNotifCount((data || []).filter(n => !n.read).length);
       } catch(e) {}
     };
     fetchNotifs();
-    const interval = setInterval(fetchNotifs, 30000);
-    return () => clearInterval(interval);
+
+    // Real-time subscription — updates bell instantly when new notif inserted
+    const channel = supabase
+      .channel('notifications-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        fetchNotifs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // Close notif panel on outside click
