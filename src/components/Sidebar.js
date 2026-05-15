@@ -54,8 +54,11 @@ export default function Sidebar({ session }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifs, setNotifs] = useState([]);
 
   const profileRef = useRef(null);
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const title = PAGE_TITLES[currentPath] || 'Rushly';
@@ -76,13 +79,29 @@ export default function Sidebar({ session }) {
   useEffect(() => {
     const fetchNotifs = async () => {
       try {
-        const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
+        const { data, count } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .limit(20);
         setNotifCount(count || 0);
+        setNotifs(data || []);
       } catch(e) {}
     };
     fetchNotifs();
     const interval = setInterval(fetchNotifs, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Close notif panel on outside click
+  useEffect(() => {
+    const handle = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
   }, []);
 
   // Close profile dropdown on outside click
@@ -98,6 +117,12 @@ export default function Sidebar({ session }) {
 
   const toggleSection = (label) => {
     setCollapsed(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const markAllRead = async () => {
+    await supabase.from('notifications').update({ read: true }).eq('read', false);
+    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifCount(0);
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
@@ -265,12 +290,14 @@ export default function Sidebar({ session }) {
           })}
         </div>
 
-        {/* Notification Bell */}
+        {/* Notification Bell + Panel */}
         {sidebarOpen && (
-          <div style={{ padding: '6px 10px 4px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.65)', fontSize: '13px' }}
+          <div style={{ padding: '6px 10px 4px', borderTop: '1px solid rgba(255,255,255,0.07)' }} ref={notifRef}>
+            <div
+              onClick={() => setNotifOpen(o => !o)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px', borderRadius: '6px', cursor: 'pointer', color: 'rgba(255,255,255,0.65)', fontSize: '13px', background: notifOpen ? 'rgba(255,255,255,0.1)' : 'transparent' }}
               onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.07)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+              onMouseLeave={e => { if (!notifOpen) e.currentTarget.style.background = 'transparent'; }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ position: 'relative' }}>
@@ -288,6 +315,70 @@ export default function Sidebar({ session }) {
               </div>
               {notifCount === 0 && <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>None</span>}
             </div>
+
+            {/* Notification panel */}
+            {notifOpen && (
+              <div style={{
+                position: 'fixed', bottom: '90px', left: '185px',
+                width: '340px', background: '#fff', borderRadius: '10px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18)', zIndex: 200,
+                border: '1px solid #e8eaf0', overflow: 'hidden',
+              }}>
+                {/* Panel header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid #e8eaf0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>Notifications</span>
+                    {notifCount > 0 && (
+                      <span style={{ fontSize: '10px', fontWeight: '600', padding: '2px 7px', borderRadius: '20px', background: '#fef2f2', color: '#e05c5c' }}>{notifCount} unread</span>
+                    )}
+                  </div>
+                  {notifCount > 0 && (
+                    <span onClick={markAllRead} style={{ fontSize: '11px', color: '#00c896', cursor: 'pointer', fontWeight: '600' }}>Mark all read</span>
+                  )}
+                </div>
+
+                {/* Notification rows */}
+                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                  {notifs.length === 0 ? (
+                    <div style={{ padding: '28px 16px', textAlign: 'center', color: '#9094a8', fontSize: '13px' }}>No notifications yet</div>
+                  ) : notifs.map(n => {
+                    const isUnread = !n.read;
+                    const timeAgo = (() => {
+                      const diff = Math.floor((Date.now() - new Date(n.created_at)) / 1000);
+                      if (diff < 60) return 'Just now';
+                      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                      return 'Yesterday';
+                    })();
+                    return (
+                      <div key={n.id} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                        padding: '12px 14px', borderBottom: '1px solid #f0f1f5',
+                        background: isUnread ? '#00c89608' : '#fff',
+                        opacity: isUnread ? 1 : 0.6,
+                      }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: isUnread ? '#e8faf5' : '#f5f6fa', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isUnread ? '#00c896' : '#9094a8'} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#1a1d2e' }}>{n.title}</span>
+                            <span style={{ fontSize: '10px', color: '#9094a8', flexShrink: 0, marginLeft: '8px' }}>{timeAgo}</span>
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#9094a8', lineHeight: '1.5' }}>{n.message}</span>
+                        </div>
+                        {isUnread && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00c896', flexShrink: 0, marginTop: '5px' }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer hint */}
+                <div style={{ padding: '8px 14px', borderTop: '1px solid #f0f1f5' }}>
+                  <span style={{ fontSize: '10px', color: '#b0b3c6' }}>Generated after each scrape completes</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
