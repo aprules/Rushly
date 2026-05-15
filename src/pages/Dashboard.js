@@ -118,6 +118,13 @@ export default function Dashboard({ session }) {
             </div>
           ))}
 
+         {/* Roadmap divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '8px 0 4px' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e8eaf0' }} />
+            <span style={{ fontSize: '11px', fontWeight: '600', color: '#b0b3c6', letterSpacing: '1px', textTransform: 'uppercase' }}>Roadmap</span>
+            <div style={{ flex: 1, height: '1px', background: '#e8eaf0' }} />
+          </div>
+
           {/* Coming Soon section */}
           {comingSoon.length > 0 && (
             <div>
@@ -160,7 +167,7 @@ export default function Dashboard({ session }) {
                 </svg>
               </div>
               {plannedOpen && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxWidth: '900px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', maxWidth: '900px' }}>
                   {planned.map(card => {
                     const st = getStatusStyle(card.status);
                     return (
