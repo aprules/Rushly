@@ -76,7 +76,7 @@ export default function Sidebar({ session }) {
     const fetchNotifs = async () => {
       try {
         const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
-        setNotifCount(count || 0);
+        // setNotifCount(count || 0);
       } catch(e) {}
     };
     fetchNotifs();
