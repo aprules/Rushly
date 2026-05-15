@@ -250,10 +250,10 @@ export default function Analytics({ session }) {
         </div>
 
         {/* Animated stat cards */}
-        <style>{\`
+        <style>{`
           @keyframes windowDown { 0% { transform: translateY(-110%); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
           .stat-enter { animation: windowDown 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-        \`}</style>
+        `}</style>
         <StatCards stats={globalStats} cardIndex={cardIndex} setCardIndex={setCardIndex} />
 
         {/* Summary cards — dynamic per tab */}
