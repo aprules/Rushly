@@ -63,6 +63,7 @@ const STATUS_CONFIG = {
 export default function Dashboard({ session }) {
   const navigate = useNavigate();
   const [roadmap, setRoadmap] = useState([]);
+  const [plannedOpen, setPlannedOpen] = useState(false);
 
   useEffect(() => {
     supabase.from('roadmap').select('*').order('sort_order', { ascending: true }).then(({ data }) => {
@@ -71,6 +72,9 @@ export default function Dashboard({ session }) {
   }, []);
 
   const getStatusStyle = (status) => STATUS_CONFIG[status] || STATUS_CONFIG.planned;
+
+  const comingSoon = roadmap.filter(c => c.status === 'coming_soon');
+  const planned = roadmap.filter(c => c.status === 'planned');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'DM Sans', Segoe UI, sans-serif", background: '#f5f6fa' }}>
@@ -114,19 +118,19 @@ export default function Dashboard({ session }) {
             </div>
           ))}
 
-          {/* Roadmap section from Supabase */}
-          {roadmap.length > 0 && (
+          {/* Coming Soon section */}
+          {comingSoon.length > 0 && (
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                <div style={{ width: '3px', height: '18px', background: '#9094a8', borderRadius: '2px' }} />
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>Roadmap</span>
-                <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '4px' }}>What's next for Rushly</span>
+                <div style={{ width: '3px', height: '18px', background: '#405189', borderRadius: '2px' }} />
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#1a1d2e' }}>Coming Soon</span>
+                <span style={{ fontSize: '12px', color: '#9094a8', marginLeft: '4px' }}>In active development</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxWidth: '900px' }}>
-                {roadmap.map(card => {
+                {comingSoon.map(card => {
                   const st = getStatusStyle(card.status);
                   return (
-                    <div key={card.id} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '20px', opacity: card.status === 'planned' ? 0.6 : 1 }}>
+                    <div key={card.id} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '20px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
                         <div style={{ width: '38px', height: '38px', background: st.bg, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{card.icon_emoji || '🔜'}</div>
                         <span style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '20px', background: st.bg, color: st.color, letterSpacing: '0.3px' }}>{st.label}</span>
@@ -137,6 +141,41 @@ export default function Dashboard({ session }) {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Planned section — collapsed by default */}
+          {planned.length > 0 && (
+            <div>
+              <div
+                onClick={() => setPlannedOpen(o => !o)}
+                style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: plannedOpen ? '12px' : '0', cursor: 'pointer', userSelect: 'none' }}
+              >
+                <div style={{ width: '3px', height: '18px', background: '#c8cad6', borderRadius: '2px' }} />
+                <span style={{ fontSize: '13px', fontWeight: '700', color: '#9094a8' }}>Planned</span>
+                <span style={{ fontSize: '12px', color: '#b0b3c6', marginLeft: '4px' }}>Future ideas</span>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9094a8" strokeWidth="2.5"
+                  style={{ marginLeft: 'auto', transition: 'transform 0.2s', transform: plannedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+              {plannedOpen && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px', maxWidth: '900px' }}>
+                  {planned.map(card => {
+                    const st = getStatusStyle(card.status);
+                    return (
+                      <div key={card.id} style={{ background: '#fff', border: '1px solid #e8eaf0', borderRadius: '12px', padding: '20px', opacity: 0.55 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <div style={{ width: '38px', height: '38px', background: st.bg, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{card.icon_emoji || '📋'}</div>
+                          <span style={{ fontSize: '10px', fontWeight: '600', padding: '3px 8px', borderRadius: '20px', background: st.bg, color: st.color, letterSpacing: '0.3px' }}>{st.label}</span>
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#1a1d2e', marginBottom: '5px' }}>{card.title}</div>
+                        <div style={{ fontSize: '12px', color: '#9094a8', lineHeight: '1.6' }}>{card.description}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
